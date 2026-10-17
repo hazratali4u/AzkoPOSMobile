@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="33px" height="36px" viewBox="0 0 33 36" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Background Rectangle -->
+    <rect width="33" height="36" fill="#423A8E" />
+
+    <!-- Supermarket Trolley / Shopping Cart Icon -->
+    <!-- Handle bar -->
+    <line x1="3" y1="7" x2="8" y2="7" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+    <!-- Cart pole from handle down to basket -->
+    <line x1="8" y1="7" x2="10" y2="14" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+    <!-- Cart basket body -->
+    <path d="M10,14 L28,14 L26,25 L12,25 Z" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round"/>
+    <!-- Cart basket middle grid line -->
+    <line x1="12" y1="20" x2="26" y2="20" stroke="#FFFFFF" stroke-width="1" stroke-linecap="round"/>
+    <!-- Left wheel -->
+    <circle cx="15" cy="30" r="2.8" fill="none" stroke="#FFFFFF" stroke-width="1.8"/>
+    <!-- Right wheel -->
+    <circle cx="25" cy="30" r="2.8" fill="none" stroke="#FFFFFF" stroke-width="1.8"/>
+</svg>

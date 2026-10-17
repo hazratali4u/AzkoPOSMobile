@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="130px" height="45px" viewBox="0 0 130 45" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Background Rectangle -->
+    <rect width="130" height="45" fill="#423A8E" />
+
+    <!-- Supermarket Trolley / Shopping Cart Icon -->
+    <!-- Handle bar -->
+    <line x1="5" y1="10" x2="10" y2="10" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+    <!-- Cart pole from handle -->
+    <line x1="10" y1="10" x2="12" y2="18" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+    <!-- Cart basket body -->
+    <path d="M12,18 L28,18 L26,30 L14,30 Z" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round"/>
+    <!-- Cart basket middle line -->
+    <line x1="14" y1="25" x2="26" y2="25" stroke="#FFFFFF" stroke-width="1" stroke-linecap="round"/>
+    <!-- Left wheel -->
+    <circle cx="16" cy="34" r="2.5" fill="none" stroke="#FFFFFF" stroke-width="1.8"/>
+    <!-- Right wheel -->
+    <circle cx="25" cy="34" r="2.5" fill="none" stroke="#FFFFFF" stroke-width="1.8"/>
+
+    <!-- Text: AzkoPOS -->
+    <text x="36" y="30" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#FFFFFF" text-anchor="start">AzkoPOS</text>
+</svg>
