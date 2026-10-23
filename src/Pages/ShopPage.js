@@ -12,7 +12,11 @@ function ShopPage() {
     conactNumber: '',
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const [error, setError] = useState('');
+  const [shopNameError, setShopNameError] = useState('');
+  const [saveMessage, setSaveMessage] = useState('');
 
   useEffect(() => {
     let isActive = true;
@@ -66,15 +70,76 @@ function ShopPage() {
     return () => {
       isActive = false;
     };
-  }, [connString]);
+  }, [connString, reloadKey]);
+
+  const handleCancel = () => {
+    setError('');
+    setShopNameError('');
+    setSaveMessage('');
+    setIsLoading(true);
+    setReloadKey((key) => key + 1);
+  };
+
+  const handleSave = async (event) => {
+    event.preventDefault();
+    setError('');
+    setShopNameError('');
+    setSaveMessage('');
+
+    if (!shop.name.trim()) {
+      setShopNameError('Shop Name is required.');
+      return;
+    }
+
+    if (
+      typeof connString !== 'string'
+      || !connString.trim()
+      || !Number.isFinite(user && user.userID)
+      || !Number.isFinite(shop.shopID)
+    ) {
+      setError('Unable to save shop details.');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const response = await fetch('https://api.azkopos.com/AzkoAPI/UpdateShop', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ConnectionString: connString,
+        },
+        body: JSON.stringify({
+          Name: shop.name,
+          Address: shop.address,
+          ConactPerson: shop.conactPerson,
+          ConactNumber: shop.conactNumber,
+          UserID: user.userID,
+          ShopID: shop.shopID,
+        }),
+      });
+
+      const responseText = await response.text();
+      if (!response.ok || responseText.trim() !== 'Sucess') {
+        throw new Error('Shop update request failed.');
+      }
+
+      setSaveMessage('Shop details saved successfully.');
+    } catch {
+      setError('Unable to save shop details. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div className="section-page shop-page" data-testid="shop-page">
       <h1>Setting / Shop</h1>
       <section className="shop-form-card" aria-label="Shop details">
-        <form className="shop-form">
+        <form className="shop-form" noValidate onSubmit={handleSave}>
           {isLoading && <div role="status">Loading shop details...</div>}
           {error && <div role="alert">{error}</div>}
+          {saveMessage && <div role="status">{saveMessage}</div>}
           <input id="shop-id" name="shopID" type="hidden" value={shop.shopID} readOnly />
           <div className="shop-form-field">
             <label htmlFor="shop-name">Shop Name <span aria-hidden="true">*</span></label>
@@ -83,9 +148,23 @@ function ShopPage() {
               name="shopName"
               type="text"
               placeholder="Shop Name"
+              required
+              aria-invalid={Boolean(shopNameError)}
+              aria-describedby={shopNameError ? 'shop-name-error' : undefined}
               value={shop.name}
-              onChange={(event) => setShop({ ...shop, name: event.target.value })}
+              onChange={(event) => {
+                const name = event.target.value;
+                setShop({ ...shop, name });
+                if (name.trim()) {
+                  setShopNameError('');
+                }
+              }}
             />
+            {shopNameError && (
+              <span id="shop-name-error" className="shop-field-error" role="alert">
+                {shopNameError}
+              </span>
+            )}
           </div>
           <div className="shop-form-field">
             <label htmlFor="shop-address">Shop Address</label>
@@ -120,8 +199,17 @@ function ShopPage() {
             />
           </div>
           <div className="shop-form-actions">
-            <button className="shop-save-button" type="button">Update</button>
-            <button className="shop-cancel-button" type="button">Cancel</button>
+            <button className="shop-save-button" type="submit" disabled={isSaving || isLoading}>
+              {isSaving ? 'Saving...' : 'Update'}
+            </button>
+            <button
+              className="shop-cancel-button"
+              type="button"
+              onClick={handleCancel}
+              disabled={isLoading || isSaving}
+            >
+              Cancel
+            </button>
           </div>
         </form>
       </section>

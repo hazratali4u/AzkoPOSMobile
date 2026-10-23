@@ -214,6 +214,7 @@
 .shop-form-field { display: grid; gap: 8px; margin-bottom: 20px; }
 .shop-form-field label { color: var(--ink); font-size: 13px; font-weight: 500; }
 .shop-form-field label span { color: #d9534f; }
+.shop-field-error { color: #d9534f; font-size: 12px; }
 .shop-form-field input, .shop-form-field textarea { width: 100%; min-height: 42px; padding: 10px 12px; border: 1px solid #d9deea; border-radius: 4px; outline: none; color: var(--ink); background: #fff; font: inherit; font-size: 13px; }
 .shop-form-field textarea { min-height: 110px; resize: vertical; }
 .shop-form-field input::placeholder { color: #a7afb7; }
@@ -224,7 +225,39 @@
 .shop-form-actions .shop-save-button:hover { border-color: #0e24f4; background: #1a2ff4; }
 .shop-form-actions .shop-cancel-button { border: 1px solid #ff3ca6; background: #ff3ca6; }
 .shop-form-actions .shop-cancel-button:hover { border-color: #ff098f; background: #ff1695; }
+.party-card { margin-top: 25px; padding: 24px; border: 1px solid var(--line); border-radius: 5px; background: #fff; }
+.party-toolbar { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+.party-search { flex: 1; min-width: 0; min-height: 42px; padding: 10px 12px; border: 1px solid #d9deea; border-radius: 4px; color: var(--ink); font: inherit; font-size: 13px; }
+.party-add-button, .party-form-actions button { min-height: 40px; padding: 10px 18px; border: 0; border-radius: 4px; color: #fff; font: inherit; font-size: 13px; cursor: pointer; }
+.party-add-button { background: #28a745; }
+.party-form-actions .shop-save-button { border: 1px solid #3f50f6; background: #3f50f6; }
+.party-form-actions .shop-save-button:hover { border-color: #0e24f4; background: #1a2ff4; }
+.party-table-wrap { overflow-x: auto; }
+.party-table { width: 100%; border-collapse: collapse; }
+.party-table th, .party-table td { padding: 10px; border: 1px solid #ddd; text-align: left; font-size: 13px; }
+.party-table th { color: #fff; background: #4caf50; font-weight: 500; }
+.party-empty-state { color: var(--muted); text-align: center !important; }
+.party-form { max-width: 760px; }
+.party-type-options { display: flex; flex-wrap: wrap; gap: 18px; margin: 0 0 22px; padding: 0; border: 0; }
+.party-type-options legend { width: 100%; margin-bottom: 10px; color: var(--ink); font-size: 13px; font-weight: 500; }
+.party-type-options label { display: inline-flex; align-items: center; gap: 7px; color: var(--ink); font-size: 13px; }
+.party-form-field { display: grid; gap: 8px; margin-bottom: 20px; }
+.party-form-field label { color: var(--ink); font-size: 13px; font-weight: 500; }
+.party-form-field label span { color: #d9534f; }
+.party-form-field input { width: 100%; min-height: 42px; padding: 10px 12px; border: 1px solid #d9deea; border-radius: 4px; color: var(--ink); background: #fff; font: inherit; font-size: 13px; }
+.party-form-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 26px; }
+.party-form-actions .shop-cancel-button { border: 1px solid #ff3ca6; background: #ff3ca6; }
+.party-form-actions .shop-cancel-button:hover { border-color: #ff098f; background: #ff1695; }
 .sidebar-backdrop { display: none; }
+
+@media (max-width: 600px) {
+  .party-card { padding: 18px 15px; }
+  .party-toolbar { align-items: stretch; flex-direction: column; }
+  .party-toolbar button { width: 100%; }
+  .party-table th, .party-table td { padding: 8px; }
+  .party-form-actions { flex-direction: column; }
+  .party-form-actions button { width: 100%; }
+}
 
 @media (max-width: 1199px) {
   .dashboard-layout { grid-template-columns: minmax(0, 1fr); gap: 18px; }

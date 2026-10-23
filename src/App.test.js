@@ -252,6 +252,156 @@ test('Shop page displays the shop details form design', () => {
   });
 });
 
+test('Shop page saves the edited details with the authenticated user and connection string', async () => {
+  global.fetch
+    .mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        shopID: 1,
+        name: 'Demo Mobile',
+        address: 'Shop address',
+        conactPerson: 'Afaq Ahmed',
+        conactNumber: '03325526566',
+      }),
+    })
+    .mockResolvedValueOnce({
+      ok: true,
+      text: async () => 'Sucess',
+    });
+
+  window.history.replaceState({}, '', '/setting/shop');
+  render(
+    <UserContext.Provider value={{
+      userID: 42,
+      connString: 'test-connection-string',
+      menus: [
+        { menuID: 1, menuName: 'Setting', menuParentID: 0, menuType: 1 },
+        { menuID: 6, menuName: 'Shop', menuParentID: 1, menuURL: 'Shop.aspx', menuType: 2 },
+      ],
+    }}
+    >
+      <HomePage pathname="/setting/shop" onNavigate={jest.fn()} onLogout={jest.fn()} />
+    </UserContext.Provider>,
+  );
+
+  await waitFor(() => expect(screen.getByLabelText(/Shop Name/)).toHaveValue('Demo Mobile'));
+  fireEvent.change(screen.getByLabelText(/Shop Name/), { target: { value: 'Updated Shop' } });
+  fireEvent.change(screen.getByLabelText('Shop Address'), { target: { value: 'Updated Address' } });
+  fireEvent.change(screen.getByLabelText('Shop Contact Person'), { target: { value: 'Updated Contact' } });
+  fireEvent.change(screen.getByLabelText('Contact Number'), { target: { value: '123456789' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Update' }));
+
+  await waitFor(() => expect(screen.getByText('Shop details saved successfully.')).toBeInTheDocument());
+  expect(global.fetch).toHaveBeenLastCalledWith(
+    'https://api.azkopos.com/AzkoAPI/UpdateShop',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ConnectionString: 'test-connection-string',
+      },
+      body: JSON.stringify({
+        Name: 'Updated Shop',
+        Address: 'Updated Address',
+        ConactPerson: 'Updated Contact',
+        ConactNumber: '123456789',
+        UserID: 42,
+        ShopID: 1,
+      }),
+    },
+  );
+  window.history.replaceState({}, '', '/login');
+});
+
+test('Shop page requires a non-empty Shop Name before saving', async () => {
+  window.history.replaceState({}, '', '/setting/shop');
+  render(
+    <UserContext.Provider value={{
+      userID: 42,
+      connString: 'test-connection-string',
+      menus: [
+        { menuID: 1, menuName: 'Setting', menuParentID: 0, menuType: 1 },
+        { menuID: 6, menuName: 'Shop', menuParentID: 1, menuURL: 'Shop.aspx', menuType: 2 },
+      ],
+    }}
+    >
+      <HomePage pathname="/setting/shop" onNavigate={jest.fn()} onLogout={jest.fn()} />
+    </UserContext.Provider>,
+  );
+
+  const shopNameInput = await screen.findByLabelText(/Shop Name/);
+  fireEvent.change(shopNameInput, { target: { value: '   ' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Update' }));
+
+  const validationMessage = screen.getByRole('alert');
+  expect(validationMessage).toHaveTextContent('Shop Name is required.');
+  expect(validationMessage).toHaveClass('shop-field-error');
+  expect(shopNameInput).toHaveAttribute('aria-invalid', 'true');
+  expect(global.fetch).toHaveBeenCalledTimes(1);
+
+  fireEvent.change(shopNameInput, { target: { value: 'Valid Shop' } });
+  expect(screen.queryByText('Shop Name is required.')).not.toBeInTheDocument();
+  expect(shopNameInput).toHaveAttribute('aria-invalid', 'false');
+  window.history.replaceState({}, '', '/login');
+});
+
+test('Shop page cancel reloads shop details and discards unsaved edits', async () => {
+  global.fetch
+    .mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        shopID: 1,
+        name: 'Original Shop',
+        address: 'Original Address',
+        conactPerson: 'Original Contact',
+        conactNumber: '111111111',
+      }),
+    })
+    .mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        shopID: 1,
+        name: 'Latest Shop',
+        address: 'Latest Address',
+        conactPerson: 'Latest Contact',
+        conactNumber: '222222222',
+      }),
+    });
+
+  window.history.replaceState({}, '', '/setting/shop');
+  render(
+    <UserContext.Provider value={{
+      connString: 'test-connection-string',
+      menus: [
+        { menuID: 1, menuName: 'Setting', menuParentID: 0, menuType: 1 },
+        { menuID: 6, menuName: 'Shop', menuParentID: 1, menuURL: 'Shop.aspx', menuType: 2 },
+      ],
+    }}
+    >
+      <HomePage pathname="/setting/shop" onNavigate={jest.fn()} onLogout={jest.fn()} />
+    </UserContext.Provider>,
+  );
+
+  await waitFor(() => expect(screen.getByLabelText(/Shop Name/)).toHaveValue('Original Shop'));
+  fireEvent.change(screen.getByLabelText(/Shop Name/), { target: { value: 'Unsaved Edit' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+  await waitFor(() => expect(screen.getByLabelText(/Shop Name/)).toHaveValue('Latest Shop'));
+  expect(screen.getByLabelText('Shop Address')).toHaveValue('Latest Address');
+  expect(screen.getByLabelText('Shop Contact Person')).toHaveValue('Latest Contact');
+  expect(screen.getByLabelText('Contact Number')).toHaveValue('222222222');
+  expect(global.fetch).toHaveBeenLastCalledWith(
+    'https://api.azkopos.com/AzkoAPI/GetShopData',
+    {
+      method: 'GET',
+      headers: {
+        ConnectionString: 'test-connection-string',
+      },
+    },
+  );
+  window.history.replaceState({}, '', '/login');
+});
+
 test.each([
   ['Shop', '/setting/shop'],
   ['Party', '/setting/party'],
@@ -277,9 +427,42 @@ test.each([
     expect(screen.getByTestId('shop-page')).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 1, name: 'Setting / Shop' })).toBeInTheDocument();
     await waitFor(() => expect(screen.getByLabelText(/Shop Name/)).toHaveValue('Demo Mobile'));
+  } else if (title === 'Party') {
+    expect(screen.getByTestId('party-page')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Setting / Party' })).toBeInTheDocument();
+    expect(screen.getByRole('searchbox', { name: 'Search Party' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Party Name' })).toBeInTheDocument();
+    expect(screen.getByText('No parties available.')).toBeInTheDocument();
   } else {
     expect(screen.getByRole('alert')).toHaveTextContent(`Page for ${title} has not been created yet.`);
   }
+});
+
+test('Party page opens and cancels the Add Party form', () => {
+  window.history.replaceState({}, '', '/setting/party');
+  render(
+    <UserContext.Provider value={{
+      menus: [
+        { menuID: 1, menuName: 'Setting', menuParentID: 0, menuType: 1 },
+        { menuID: 7, menuName: 'Party', menuParentID: 1, menuURL: 'Party.aspx', menuType: 2 },
+      ],
+    }}
+    >
+      <HomePage pathname="/setting/party" onNavigate={jest.fn()} onLogout={jest.fn()} />
+    </UserContext.Provider>,
+  );
+
+  fireEvent.click(screen.getByRole('button', { name: 'Add Party' }));
+  expect(screen.getByRole('region', { name: 'Add party' })).toBeInTheDocument();
+  expect(screen.getByLabelText('Customer')).not.toBeChecked();
+  expect(screen.getByLabelText('Supplier')).toBeChecked();
+  expect(screen.getByLabelText(/Party Name/)).toBeInTheDocument();
+  expect(screen.getByLabelText('Address')).toBeInTheDocument();
+  expect(screen.getByLabelText('Contact No')).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+  expect(screen.getByRole('region', { name: 'Party list' })).toBeInTheDocument();
+  window.history.replaceState({}, '', '/login');
 });
 
 test('sidebar displays only groups and pages assigned by the API', () => {

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useUser } from '../UserContext';
 import ShopPage from './ShopPage';
+import PartyPage from './PartyPage';
 
 const menuIcons = {
   1: 'mdi-settings',
@@ -155,6 +156,7 @@ function HomePage({ pathname, onNavigate, onLogout }) {
     .find(({ group, page }) => pathname === `/${toSlug(group.title)}/${toSlug(page.title)}`);
   const activePage = pathname === '/dashboard' ? 'Dashboard' : activeEntry?.page.title || 'Dashboard';
   const pageComponents = {
+    party: PartyPage,
     shop: ShopPage,
   };
   const PageComponent = pageComponents[activePage.toLowerCase()];
