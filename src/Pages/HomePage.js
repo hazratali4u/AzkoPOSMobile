@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useUser } from '../UserContext';
-import { GenericMenuPage, PartyPage, UserPage } from './MenuPages';
 import ShopPage from './ShopPage';
 
 const menuIcons = {
@@ -155,12 +154,10 @@ function HomePage({ pathname, onNavigate, onLogout }) {
     .flatMap((group) => group.pages.map((page) => ({ group, page })))
     .find(({ group, page }) => pathname === `/${toSlug(group.title)}/${toSlug(page.title)}`);
   const activePage = pathname === '/dashboard' ? 'Dashboard' : activeEntry?.page.title || 'Dashboard';
-  const menuPageComponents = {
+  const pageComponents = {
     shop: ShopPage,
-    party: PartyPage,
-    user: UserPage,
   };
-  const MenuPageComponent = menuPageComponents[activePage.toLowerCase()] || GenericMenuPage;
+  const PageComponent = pageComponents[activePage.toLowerCase()];
   const employeeName = user && user.employeeName ? user.employeeName : 'Admin User';
   const roleLabel = user && user.roleID != null ? `Role ${user.roleID}` : 'Administrator';
   const [expandedMenu, setExpandedMenu] = useState('');
@@ -228,7 +225,11 @@ function HomePage({ pathname, onNavigate, onLogout }) {
         <main className="home-main">
           {activePage === 'Dashboard'
             ? <Dashboard />
-            : <MenuPageComponent key={activeEntry?.page.id} title={activePage} />}
+            : PageComponent
+              ? <PageComponent key={activeEntry?.page.id} />
+              : <div className="section-page" role="alert">
+                Page for {activePage} has not been created yet.
+              </div>}
         </main>
         <footer className="home-footer"><span>Copyright © AzkoIT 2025</span><span>AzkoPOS · Business Manager</span></footer>
       </div>

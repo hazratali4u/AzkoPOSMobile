@@ -7,6 +7,16 @@ const originalFetch = global.fetch;
 
 beforeEach(() => {
   global.fetch = jest.fn();
+  global.fetch.mockResolvedValue({
+    ok: true,
+    json: async () => ({
+      shopID: 1,
+      name: 'Demo Mobile',
+      address: 'shop# 14,LG Floor,Makkah Mobile Mall,Adyala Road, Rawalpindi',
+      conactPerson: 'Afaq Ahmed',
+      conactNumber: '03325526566',
+    }),
+  });
   sessionStorage.clear();
 });
 
@@ -19,20 +29,32 @@ afterEach(() => {
 });
 
 test('login opens the dashboard and page navigation keeps the shared shell', async () => {
-  global.fetch.mockResolvedValue({
-    ok: true,
-    json: async () => ({
-      userID: 1,
-      employeeName: 'Hazrat Ali',
-      roleID: 1,
-      menus: [
-        { menuID: 1, menuName: 'Setting', menuParentID: 0, menuType: 1 },
-        { menuID: 3, menuName: 'Transactions', menuParentID: 0, menuType: 1 },
-        { menuID: 6, menuName: 'Shop', menuParentID: 1, menuURL: 'Shop.aspx', menuType: 2 },
-        { menuID: 12, menuName: 'POS', menuParentID: 3, menuURL: 'POS.aspx', menuType: 2 },
-      ],
-    }),
-  });
+  global.fetch
+    .mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        userID: 1,
+        employeeName: 'Hazrat Ali',
+        roleID: 1,
+        connString: 'test-connection-string',
+        menus: [
+          { menuID: 1, menuName: 'Setting', menuParentID: 0, menuType: 1 },
+          { menuID: 3, menuName: 'Transactions', menuParentID: 0, menuType: 1 },
+          { menuID: 6, menuName: 'Shop', menuParentID: 1, menuURL: 'Shop.aspx', menuType: 2 },
+          { menuID: 12, menuName: 'POS', menuParentID: 3, menuURL: 'POS.aspx', menuType: 2 },
+        ],
+      }),
+    })
+    .mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        shopID: 1,
+        name: 'Demo Mobile',
+        address: 'shop# 14,LG Floor,Makkah Mobile Mall,Adyala Road, Rawalpindi',
+        conactPerson: 'Afaq Ahmed',
+        conactNumber: '03325526566',
+      }),
+    });
 
   render(<App />);
 
@@ -41,6 +63,7 @@ test('login opens the dashboard and page navigation keeps the shared shell', asy
   fireEvent.change(screen.getByLabelText('Password *'), { target: { value: 'password' } });
   fireEvent.click(screen.getByRole('button', { name: 'Login' }));
   await waitFor(() => expect(window.location.pathname).toBe('/dashboard'));
+  expect(JSON.parse(sessionStorage.getItem('azkopos.user')).connString).toBe('test-connection-string');
   expect(global.fetch).toHaveBeenCalledWith(
     'https://api.azkopos.com/AzkoAPI/GetUserData',
     {
@@ -66,7 +89,7 @@ test('login opens the dashboard and page navigation keeps the shared shell', asy
 
   expect(screen.getByRole('navigation', { name: 'Main navigation' })).toBeInTheDocument();
   expect(screen.queryByRole('button', { name: /Reports/ })).not.toBeInTheDocument();
-  expect(screen.getByRole('heading', { level: 1, name: 'POS' })).toBeInTheDocument();
+  expect(screen.getByRole('alert')).toHaveTextContent('Page for POS has not been created yet.');
   expect(screen.getByRole('heading', { level: 4, name: 'AzkoPOS' })).toBeInTheDocument();
   expect(screen.getByText('Hazrat Ali')).toBeInTheDocument();
   expect(screen.getByText('Role 1')).toBeInTheDocument();
@@ -75,6 +98,7 @@ test('login opens the dashboard and page navigation keeps the shared shell', asy
   fireEvent.click(screen.getByRole('button', { name: 'Shop' }));
   expect(window.location.pathname).toBe('/setting/shop');
   expect(screen.getByRole('heading', { level: 1, name: 'Setting / Shop' })).toBeInTheDocument();
+  await waitFor(() => expect(screen.getByLabelText(/Shop Name/)).toHaveValue('Demo Mobile'));
 });
 
 test('keeps the authenticated menu after a hard refresh and clears it on logout', async () => {
@@ -84,6 +108,7 @@ test('keeps the authenticated menu after a hard refresh and clears it on logout'
       userID: 1,
       employeeName: 'Hazrat Ali',
       roleID: 1,
+      connString: 'test-connection-string',
       menus: [
         { menuID: 1, menuName: 'Setting', menuParentID: 0, menuType: 1 },
         { menuID: 6, menuName: 'Shop', menuParentID: 1, menuURL: 'Shop.aspx', menuType: 2 },
@@ -101,6 +126,7 @@ test('keeps the authenticated menu after a hard refresh and clears it on logout'
   firstRender.unmount();
   render(<App />);
 
+  expect(JSON.parse(sessionStorage.getItem('azkopos.user')).connString).toBe('test-connection-string');
   expect(screen.getByRole('button', { name: /Setting/ })).toBeInTheDocument();
   expect(screen.getByText('Hazrat Ali')).toBeInTheDocument();
 
@@ -143,10 +169,32 @@ test('rejects a successful response without valid user details', async () => {
   expect(window.location.pathname).toBe('/login');
 });
 
-test('shop URL opens the Shop page directly', () => {
+test('rejects a successful response without a connection string', async () => {
+  global.fetch.mockResolvedValue({
+    ok: true,
+    json: async () => ({
+      userID: 1,
+      employeeName: 'Hazrat Ali',
+      roleID: 1,
+    }),
+  });
+
+  window.history.replaceState({}, '', '/login');
+  render(<App />);
+  fireEvent.change(screen.getByLabelText('Username *'), { target: { value: 'demo' } });
+  fireEvent.change(screen.getByLabelText('Password *'), { target: { value: 'password' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Login' }));
+
+  expect(await screen.findByRole('alert')).toHaveTextContent('Invalid login ID or password.');
+  expect(window.location.pathname).toBe('/login');
+  expect(sessionStorage.getItem('azkopos.user')).toBeNull();
+});
+
+test('shop URL opens the Shop page directly', async () => {
   window.history.replaceState({}, '', '/setting/shop');
   render(
     <UserContext.Provider value={{
+      connString: 'test-connection-string',
       menus: [
         { menuID: 1, menuName: 'Setting', menuParentID: 0, menuType: 1 },
         { menuID: 6, menuName: 'Shop', menuParentID: 1, menuURL: 'Shop.aspx', menuType: 2 },
@@ -158,6 +206,7 @@ test('shop URL opens the Shop page directly', () => {
   );
 
   expect(screen.getByRole('heading', { level: 1, name: 'Setting / Shop' })).toBeInTheDocument();
+  await waitFor(() => expect(screen.getByLabelText(/Shop Name/)).toHaveValue('Demo Mobile'));
   window.history.replaceState({}, '', '/login');
 });
 
@@ -165,6 +214,7 @@ test('Shop page displays the shop details form design', () => {
   window.history.replaceState({}, '', '/setting/shop');
   render(
     <UserContext.Provider value={{
+      connString: 'test-connection-string',
       menus: [
         { menuID: 1, menuName: 'Setting', menuParentID: 0, menuType: 1 },
         { menuID: 6, menuName: 'Shop', menuParentID: 1, menuURL: 'Shop.aspx', menuType: 2 },
@@ -181,16 +231,36 @@ test('Shop page displays the shop details form design', () => {
   expect(screen.getByLabelText('Contact Number')).toHaveAttribute('type', 'tel');
   expect(screen.getByRole('button', { name: 'Update' })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
+
+  return waitFor(() => {
+    expect(global.fetch).toHaveBeenCalledWith(
+      'https://api.azkopos.com/AzkoAPI/GetShopData',
+      {
+        method: 'GET',
+        headers: {
+          ConnectionString: 'test-connection-string',
+        },
+      },
+    );
+    expect(screen.getByLabelText(/Shop Name/)).toHaveValue('Demo Mobile');
+    expect(screen.getByLabelText('Shop Address')).toHaveValue(
+      'shop# 14,LG Floor,Makkah Mobile Mall,Adyala Road, Rawalpindi',
+    );
+    expect(screen.getByLabelText('Shop Contact Person')).toHaveValue('Afaq Ahmed');
+    expect(screen.getByLabelText('Contact Number')).toHaveValue('03325526566');
+    expect(document.querySelector('input[name="shopID"]')).toHaveValue('1');
+  });
 });
 
 test.each([
-  ['Shop', '/setting/shop', 'shop-page', 'Setting / Shop'],
-  ['Party', '/setting/party', 'party-page', 'Party'],
-  ['User', '/setting/user', 'user-page', 'User'],
-])('%s opens its own menu page', (title, pathname, testId, heading) => {
+  ['Shop', '/setting/shop'],
+  ['Party', '/setting/party'],
+  ['User', '/setting/user'],
+])('%s opens its menu page or shows that it is not created', async (title, pathname) => {
   window.history.replaceState({}, '', pathname);
   render(
     <UserContext.Provider value={{
+      connString: 'test-connection-string',
       menus: [
         { menuID: 1, menuName: 'Setting', menuParentID: 0, menuType: 1 },
         { menuID: 6, menuName: 'Shop', menuParentID: 1, menuURL: 'Shop.aspx', menuType: 2 },
@@ -203,8 +273,13 @@ test.each([
     </UserContext.Provider>,
   );
 
-  expect(screen.getByTestId(testId)).toBeInTheDocument();
-  expect(screen.getByRole('heading', { level: 1, name: heading })).toBeInTheDocument();
+  if (title === 'Shop') {
+    expect(screen.getByTestId('shop-page')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Setting / Shop' })).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByLabelText(/Shop Name/)).toHaveValue('Demo Mobile'));
+  } else {
+    expect(screen.getByRole('alert')).toHaveTextContent(`Page for ${title} has not been created yet.`);
+  }
 });
 
 test('sidebar displays only groups and pages assigned by the API', () => {
