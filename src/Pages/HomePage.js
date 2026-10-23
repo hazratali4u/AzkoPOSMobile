@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useUser } from '../UserContext';
+import { GenericMenuPage, PartyPage, UserPage } from './MenuPages';
+import ShopPage from './ShopPage';
 
 const menuIcons = {
   1: 'mdi-settings',
@@ -153,8 +155,12 @@ function HomePage({ pathname, onNavigate, onLogout }) {
     .flatMap((group) => group.pages.map((page) => ({ group, page })))
     .find(({ group, page }) => pathname === `/${toSlug(group.title)}/${toSlug(page.title)}`);
   const activePage = pathname === '/dashboard' ? 'Dashboard' : activeEntry?.page.title || 'Dashboard';
-  const activeGroup = activeEntry?.group;
-  const breadcrumbLabel = activeGroup ? `${activeGroup.title} / ${activePage}` : 'Dashboard';
+  const menuPageComponents = {
+    shop: ShopPage,
+    party: PartyPage,
+    user: UserPage,
+  };
+  const MenuPageComponent = menuPageComponents[activePage.toLowerCase()] || GenericMenuPage;
   const employeeName = user && user.employeeName ? user.employeeName : 'Admin User';
   const roleLabel = user && user.roleID != null ? `Role ${user.roleID}` : 'Administrator';
   const [expandedMenu, setExpandedMenu] = useState('');
@@ -188,7 +194,6 @@ function HomePage({ pathname, onNavigate, onLogout }) {
           <img className="sidebar-brand-mini" src="/assets/images/logo-mini.svg" alt="AzkoPOS" />
           <h4 className="visually-hidden">AzkoPOS</h4>
         </div>
-        <p className="sidebar-section-label">WORKSPACE</p>
         <nav className="sidebar-nav" aria-label="Main navigation">
           <button className={`nav-link${activePage === 'Dashboard' ? ' is-active' : ''}`} title="Dashboard" onClick={() => selectPage(null)}>
             <i className="mdi mdi-home nav-icon" aria-hidden="true" /><span className="nav-title">Dashboard</span>
@@ -210,10 +215,9 @@ function HomePage({ pathname, onNavigate, onLogout }) {
           <div className="topbar-left">
             <img className="mobile-brand-logo" src="/assets/images/logo-mini.svg" alt="AzkoPOS" />
             <button className="menu-toggle" aria-label={mobileMenuOpen ? 'Close navigation' : 'Toggle navigation'} aria-expanded={mobileMenuOpen} onClick={toggleNavigation}>☰</button>
-            <span className="breadcrumb-current" data-testid="breadcrumb-current">{breadcrumbLabel}</span>
           </div>
           <div className="topbar-profile-wrap">
-            <button className="topbar-profile" aria-expanded={profileOpen} onClick={() => setProfileOpen(!profileOpen)}>
+            <button className="topbar-profile" aria-label={`Open ${employeeName} menu`} aria-expanded={profileOpen} onClick={() => setProfileOpen(!profileOpen)}>
               <img className="profile-avatar" src="/assets/images/faces-clipart/pic-3.png" alt="" />
               <span className="profile-details"><strong>{employeeName}</strong><small>{roleLabel}</small></span>
               <span className="profile-chevron">⌄</span>
@@ -222,7 +226,9 @@ function HomePage({ pathname, onNavigate, onLogout }) {
           </div>
         </header>
         <main className="home-main">
-          {activePage === 'Dashboard' ? <Dashboard /> : <div className="section-page"><p className="eyebrow">WORKSPACE</p><h1>{activePage}</h1><p className="dashboard-subtitle">Manage your {activePage.toLowerCase()} in AzkoPOS.</p><div className="section-empty"><span className="section-empty-mark">{activeGroup?.icon || '▦'}</span><h2>{activePage}</h2><p>This workspace is ready for your {activePage.toLowerCase()} data.</p></div></div>}
+          {activePage === 'Dashboard'
+            ? <Dashboard />
+            : <MenuPageComponent key={activeEntry?.page.id} title={activePage} />}
         </main>
         <footer className="home-footer"><span>Copyright © AzkoIT 2025</span><span>AzkoPOS · Business Manager</span></footer>
       </div>

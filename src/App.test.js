@@ -60,7 +60,6 @@ test('login opens the dashboard and page navigation keeps the shared shell', asy
   expect(screen.getByRole('heading', { name: 'Welcome to AzkoPOS' })).toBeInTheDocument();
   expect(screen.getByText('Hazrat Ali')).toBeInTheDocument();
   expect(screen.getByText('Role 1')).toBeInTheDocument();
-  expect(screen.getByTestId('breadcrumb-current')).toHaveTextContent('Dashboard');
 
   fireEvent.click(screen.getByRole('button', { name: /Transactions/ }));
   fireEvent.click(screen.getByRole('button', { name: 'POS' }));
@@ -75,8 +74,7 @@ test('login opens the dashboard and page navigation keeps the shared shell', asy
   fireEvent.click(screen.getByRole('button', { name: /Setting/ }));
   fireEvent.click(screen.getByRole('button', { name: 'Shop' }));
   expect(window.location.pathname).toBe('/setting/shop');
-  expect(screen.getByRole('heading', { level: 1, name: 'Shop' })).toBeInTheDocument();
-  expect(screen.getByTestId('breadcrumb-current')).toHaveTextContent('Setting / Shop');
+  expect(screen.getByRole('heading', { level: 1, name: 'Setting / Shop' })).toBeInTheDocument();
 });
 
 test('keeps the authenticated menu after a hard refresh and clears it on logout', async () => {
@@ -159,8 +157,54 @@ test('shop URL opens the Shop page directly', () => {
     </UserContext.Provider>,
   );
 
-  expect(screen.getByRole('heading', { level: 1, name: 'Shop' })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { level: 1, name: 'Setting / Shop' })).toBeInTheDocument();
   window.history.replaceState({}, '', '/login');
+});
+
+test('Shop page displays the shop details form design', () => {
+  window.history.replaceState({}, '', '/setting/shop');
+  render(
+    <UserContext.Provider value={{
+      menus: [
+        { menuID: 1, menuName: 'Setting', menuParentID: 0, menuType: 1 },
+        { menuID: 6, menuName: 'Shop', menuParentID: 1, menuURL: 'Shop.aspx', menuType: 2 },
+      ],
+    }}
+    >
+      <HomePage pathname="/setting/shop" onNavigate={jest.fn()} onLogout={jest.fn()} />
+    </UserContext.Provider>,
+  );
+
+  expect(screen.getByLabelText(/Shop Name/)).toBeInTheDocument();
+  expect(screen.getByLabelText('Shop Address')).toBeInTheDocument();
+  expect(screen.getByLabelText('Shop Contact Person')).toBeInTheDocument();
+  expect(screen.getByLabelText('Contact Number')).toHaveAttribute('type', 'tel');
+  expect(screen.getByRole('button', { name: 'Update' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
+});
+
+test.each([
+  ['Shop', '/setting/shop', 'shop-page', 'Setting / Shop'],
+  ['Party', '/setting/party', 'party-page', 'Party'],
+  ['User', '/setting/user', 'user-page', 'User'],
+])('%s opens its own menu page', (title, pathname, testId, heading) => {
+  window.history.replaceState({}, '', pathname);
+  render(
+    <UserContext.Provider value={{
+      menus: [
+        { menuID: 1, menuName: 'Setting', menuParentID: 0, menuType: 1 },
+        { menuID: 6, menuName: 'Shop', menuParentID: 1, menuURL: 'Shop.aspx', menuType: 2 },
+        { menuID: 7, menuName: 'Party', menuParentID: 1, menuURL: 'Party.aspx', menuType: 2 },
+        { menuID: 8, menuName: 'User', menuParentID: 1, menuURL: 'User.aspx', menuType: 2 },
+      ],
+    }}
+    >
+      <HomePage pathname={pathname} onNavigate={jest.fn()} onLogout={jest.fn()} />
+    </UserContext.Provider>,
+  );
+
+  expect(screen.getByTestId(testId)).toBeInTheDocument();
+  expect(screen.getByRole('heading', { level: 1, name: heading })).toBeInTheDocument();
 });
 
 test('sidebar displays only groups and pages assigned by the API', () => {

@@ -137,8 +137,6 @@
 .home-main-area { min-width: 0; flex: 1; display: flex; flex-direction: column; }
 .home-topbar { position: sticky; z-index: 5; top: 0; height: 70px; flex: 0 0 70px; display: flex; justify-content: space-between; align-items: center; padding: 0 34px; border-bottom: 1px solid #3f3f40; background: #000; }
 .topbar-left { display: flex; align-items: center; gap: 11px; font-size: 11px; }
-.breadcrumb-root, .breadcrumb-divider { color: #99a39f; }
-.breadcrumb-current { color: #8e94a9; font-weight: 500; }
 .topbar-profile-wrap { position: relative; }
 .topbar-profile { display: flex; align-items: center; gap: 10px; padding: 4px 0 4px 8px; border: 0; color: #8e94a9; background: transparent; text-align: left; cursor: pointer; }
 .profile-avatar { width: 34px; height: 34px; display: block; border-radius: 50%; object-fit: cover; }
@@ -211,6 +209,21 @@
 .section-empty { min-height: 220px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin-top: 25px; border: 1px solid var(--line); border-radius: 5px; background: #fff; text-align: center; }
 .section-empty-mark { width: 42px; height: 42px; display: grid; place-items: center; margin-bottom: 14px; border-radius: 50%; color: var(--green); background: #edf5f0; font-size: 21px; }
 .section-empty p { margin: 8px 0 0; color: var(--muted); font-size: 10px; }
+.shop-form-card { margin-top: 25px; padding: 28px; border: 1px solid var(--line); border-radius: 5px; background: #fff; }
+.shop-form { width: 100%; max-width: 760px; }
+.shop-form-field { display: grid; gap: 8px; margin-bottom: 20px; }
+.shop-form-field label { color: var(--ink); font-size: 13px; font-weight: 500; }
+.shop-form-field label span { color: #d9534f; }
+.shop-form-field input, .shop-form-field textarea { width: 100%; min-height: 42px; padding: 10px 12px; border: 1px solid #d9deea; border-radius: 4px; outline: none; color: var(--ink); background: #fff; font: inherit; font-size: 13px; }
+.shop-form-field textarea { min-height: 110px; resize: vertical; }
+.shop-form-field input::placeholder { color: #a7afb7; }
+.shop-form-field input:focus, .shop-form-field textarea:focus { border-color: #423a8e; box-shadow: 0 0 0 3px rgba(66,58,142,.1); }
+.shop-form-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 26px; }
+.shop-form-actions button { min-width: 88px; padding: 10px 18px; border: 0; border-radius: 4px; color: #fff; font: inherit; font-size: 13px; cursor: pointer; }
+.shop-form-actions .shop-save-button { border: 1px solid #3f50f6; background: #3f50f6; }
+.shop-form-actions .shop-save-button:hover { border-color: #0e24f4; background: #1a2ff4; }
+.shop-form-actions .shop-cancel-button { border: 1px solid #ff3ca6; background: #ff3ca6; }
+.shop-form-actions .shop-cancel-button:hover { border-color: #ff098f; background: #ff1695; }
 .sidebar-backdrop { display: none; }
 
 @media (max-width: 1199px) {
@@ -239,15 +252,20 @@
 }
 
 @media (max-width: 600px) {
-  .home-topbar { height: 60px; flex-basis: 60px; padding: 0 14px; }
-  .topbar-left { min-width: 0; gap: 7px; }
-  .mobile-brand-logo { display: block; }
-  .breadcrumb-current { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .topbar-profile { gap: 6px; }
-  .profile-details { max-width: 100px; }
+  .home-topbar { position: relative; height: 60px; flex-basis: 60px; justify-content: center; padding: 0 14px; }
+  .topbar-left { display: contents; }
+  .mobile-brand-logo { position: absolute; left: 14px; display: block; }
+  .topbar-profile-wrap { position: absolute; left: 50%; max-width: calc(100% - 104px); transform: translateX(-50%); }
+  .topbar-profile { justify-content: center; gap: 5px; padding: 4px; }
+  .profile-avatar { display: block; }
+  .profile-details { display: none; }
   .profile-details strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .profile-details small, .profile-chevron { display: none; }
+  .profile-chevron { display: block; }
+  .menu-toggle { position: absolute; right: 14px; }
   .home-main { padding: 23px 14px 28px; }
+  .shop-form-card { margin-top: 20px; padding: 18px 15px; }
+  .shop-form-field { margin-bottom: 17px; }
+  .shop-form-actions { margin-top: 22px; }
   .dashboard-heading { margin-bottom: 17px; }
   .dashboard-heading h1 { font-size: 22px; }
   .dashboard-heading h1 span { font-size: 13px; }
