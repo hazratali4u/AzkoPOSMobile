@@ -161,7 +161,7 @@ function ShopPage() {
               }}
             />
             {shopNameError && (
-              <span id="shop-name-error" className="shop-field-error" role="alert">
+              <span id="shop-name-error" className="required-field-error" role="alert">
                 {shopNameError}
               </span>
             )}

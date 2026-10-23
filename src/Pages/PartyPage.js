@@ -3,6 +3,13 @@ import React, { useState } from 'react';
 function PartyPage() {
   const [isAddingParty, setIsAddingParty] = useState(false);
   const [partyType, setPartyType] = useState('2');
+  const [partyName, setPartyName] = useState('');
+  const [partyNameError, setPartyNameError] = useState('');
+
+  const saveParty = (event) => {
+    event.preventDefault();
+    setPartyNameError(partyName.trim() ? '' : 'Party Name is required.');
+  };
 
   return (
     <div className="section-page party-page" data-testid="party-page">
@@ -19,7 +26,11 @@ function PartyPage() {
             <button
               className="party-add-button"
               type="button"
-              onClick={() => setIsAddingParty(true)}
+              onClick={() => {
+                setPartyName('');
+                setPartyNameError('');
+                setIsAddingParty(true);
+              }}
             >
               Add Party
             </button>
@@ -46,7 +57,7 @@ function PartyPage() {
         </section>
       ) : (
         <section className="party-card" aria-label="Add party">
-          <form className="party-form">
+          <form className="party-form" noValidate onSubmit={saveParty}>
             <fieldset className="party-type-options">
               <legend>Party Type</legend>
               <label>
@@ -72,7 +83,19 @@ function PartyPage() {
             </fieldset>
             <div className="party-form-field">
               <label htmlFor="party-name">Party Name <span aria-hidden="true">*</span></label>
-              <input id="party-name" type="text" placeholder="Party Name" />
+              <input
+                id="party-name"
+                type="text"
+                placeholder="Party Name"
+                value={partyName}
+                aria-invalid={Boolean(partyNameError)}
+                aria-describedby={partyNameError ? 'party-name-error' : undefined}
+                onChange={(event) => {
+                  setPartyName(event.target.value);
+                  if (event.target.value.trim()) setPartyNameError('');
+                }}
+              />
+              {partyNameError && <span id="party-name-error" className="required-field-error" role="alert">{partyNameError}</span>}
             </div>
             <div className="party-form-field">
               <label htmlFor="party-address">Address</label>
@@ -83,7 +106,7 @@ function PartyPage() {
               <input id="party-contact" type="text" placeholder="Party Contact No" />
             </div>
             <div className="party-form-actions">
-              <button className="shop-save-button" type="button">Save</button>
+              <button className="shop-save-button" type="submit">Save</button>
               <button
                 className="shop-cancel-button"
                 type="button"

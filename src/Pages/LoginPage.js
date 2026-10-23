@@ -3,12 +3,21 @@ import React, { useState } from 'react';
 function LoginPage({ onLogin }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [usernameError, setUsernameError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    setError('');
+    const missingUsername = !username.trim();
+    const missingPassword = !password.trim();
+    setUsernameError(missingUsername ? 'Username is required.' : '');
+    setPasswordError(missingPassword ? 'Password is required.' : '');
+
+    if (missingUsername || missingPassword) {
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -25,7 +34,7 @@ function LoginPage({ onLogin }) {
       });
 
       if (!response.ok) {
-        setError('Invalid login ID or password.');
+        setPasswordError('Invalid login ID or password.');
         return;
       }
 
@@ -36,14 +45,16 @@ function LoginPage({ onLogin }) {
         || typeof user.employeeName !== 'string'
         || !user.employeeName.trim()
         || !Number.isFinite(user.roleID)
+        || typeof user.connString !== 'string'
+        || !user.connString.trim()
       ) {
-        setError('Invalid login ID or password.');
+        setPasswordError('Invalid login ID or password.');
         return;
       }
 
       onLogin(user);
     } catch {
-      setError('Invalid login ID or password.');
+      setPasswordError('Invalid login ID or password.');
     } finally {
       setIsSubmitting(false);
     }
@@ -63,9 +74,7 @@ function LoginPage({ onLogin }) {
           <div className="row">
             <div className="card" style={{ width: '100%' }}>
               <div className="card-body">
-                <form onSubmit={handleSubmit}>
-                  {error && <div className="form-group text-danger" role="alert">{error}</div>}
-
+                <form noValidate onSubmit={handleSubmit}>
                   <div className="form-group">
                     <label htmlFor="txtUsername">Username *</label>
                     <input
@@ -73,10 +82,20 @@ function LoginPage({ onLogin }) {
                       className="form-control"
                       type="text"
                       placeholder="Username"
+                      aria-invalid={Boolean(usernameError)}
+                      aria-describedby={usernameError ? 'username-error' : undefined}
                       value={username}
-                      onChange={(event) => setUsername(event.target.value)}
+                      onChange={(event) => {
+                        setUsername(event.target.value);
+                        setUsernameError('');
+                      }}
                       required
                     />
+                    {usernameError && (
+                      <span id="username-error" className="required-field-error" role="alert">
+                        {usernameError}
+                      </span>
+                    )}
                   </div>
 
                   <div className="form-group">
@@ -86,10 +105,20 @@ function LoginPage({ onLogin }) {
                       className="form-control"
                       type="password"
                       placeholder="Password"
+                      aria-invalid={Boolean(passwordError)}
+                      aria-describedby={passwordError ? 'password-error' : undefined}
                       value={password}
-                      onChange={(event) => setPassword(event.target.value)}
+                      onChange={(event) => {
+                        setPassword(event.target.value);
+                        setPasswordError('');
+                      }}
                       required
                     />
+                    {passwordError && (
+                      <span id="password-error" className="required-field-error" role="alert">
+                        {passwordError}
+                      </span>
+                    )}
                   </div>
 
                   <button type="submit" className="btn btn-primary mr-2" disabled={isSubmitting}>
@@ -101,6 +130,8 @@ function LoginPage({ onLogin }) {
                     onClick={() => {
                       setUsername('');
                       setPassword('');
+                      setUsernameError('');
+                      setPasswordError('');
                     }}
                     disabled={isSubmitting}
                   >

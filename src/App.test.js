@@ -1,6 +1,9 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import App from './App';
+import CompanyPage from './Pages/CompanyPage';
 import HomePage from './Pages/HomePage';
+import ModelPage from './Pages/ModelPage';
+import RamRomPage from './Pages/RamRomPage';
 import UserContext from './UserContext';
 
 const originalFetch = global.fetch;
@@ -101,6 +104,26 @@ test('login opens the dashboard and page navigation keeps the shared shell', asy
   await waitFor(() => expect(screen.getByLabelText(/Shop Name/)).toHaveValue('Demo Mobile'));
 });
 
+test('shows the copyright notice on the login page', () => {
+  window.history.replaceState({}, '', '/login');
+  render(<App />);
+
+  expect(screen.getByText('Copyright © AzkoIT 2025')).toBeInTheDocument();
+});
+
+test('centers the copyright notice in the dashboard footer', () => {
+  render(
+    <UserContext.Provider value={{ menus: [] }}>
+      <HomePage pathname="/dashboard" onNavigate={jest.fn()} onLogout={jest.fn()} />
+    </UserContext.Provider>,
+  );
+
+  const footer = document.querySelector('.home-footer');
+  expect(footer).toHaveTextContent('Copyright © AzkoIT 2025');
+  expect(footer.children).toHaveLength(1);
+  expect(footer).not.toHaveTextContent('AzkoPOS · Business Manager');
+});
+
 test('keeps the authenticated menu after a hard refresh and clears it on logout', async () => {
   global.fetch.mockResolvedValue({
     ok: true,
@@ -137,7 +160,7 @@ test('keeps the authenticated menu after a hard refresh and clears it on logout'
   expect(screen.getByRole('heading', { name: 'Login Form' })).toBeInTheDocument();
 });
 
-test('shows an error and stays on login when the login request fails', async () => {
+test('shows a red error beside the password when the login request fails', async () => {
   global.fetch.mockResolvedValue({
     ok: false,
     text: async () => '',
@@ -149,8 +172,45 @@ test('shows an error and stays on login when the login request fails', async () 
   fireEvent.change(screen.getByLabelText('Password *'), { target: { value: 'password' } });
   fireEvent.click(screen.getByRole('button', { name: 'Login' }));
 
-  expect(await screen.findByRole('alert')).toHaveTextContent('Invalid login ID or password.');
+  expect(await screen.findByText('Invalid login ID or password.')).toHaveClass('required-field-error');
+  expect(screen.getByLabelText('Password *')).toHaveAttribute('aria-describedby', 'password-error');
   expect(window.location.pathname).toBe('/login');
+});
+
+test('shows separate red validation messages beside empty login fields without submitting', () => {
+  window.history.replaceState({}, '', '/login');
+  render(<App />);
+
+  fireEvent.click(screen.getByRole('button', { name: 'Login' }));
+
+  expect(screen.getByText('Username is required.')).toHaveClass('required-field-error');
+  expect(screen.getByText('Password is required.')).toHaveClass('required-field-error');
+  expect(screen.getByLabelText('Username *')).toHaveAttribute('aria-describedby', 'username-error');
+  expect(screen.getByLabelText('Password *')).toHaveAttribute('aria-describedby', 'password-error');
+  expect(global.fetch).not.toHaveBeenCalled();
+});
+
+test.each([
+  ['Username', 'Username is required.'],
+  ['Password', 'Password is required.'],
+])('shows a red validation message beside %s when it is empty', (field, message) => {
+  window.history.replaceState({}, '', '/login');
+  render(<App />);
+  fireEvent.change(screen.getByLabelText('Username *'), {
+    target: { value: field === 'Username' ? '' : 'demo' },
+  });
+  fireEvent.change(screen.getByLabelText('Password *'), {
+    target: { value: field === 'Password' ? '' : 'password' },
+  });
+
+  fireEvent.click(screen.getByRole('button', { name: 'Login' }));
+
+  expect(screen.getByText(message)).toHaveClass('required-field-error');
+  expect(screen.getByLabelText(`${field} *`)).toHaveAttribute(
+    'aria-describedby',
+    field === 'Username' ? 'username-error' : 'password-error',
+  );
+  expect(global.fetch).not.toHaveBeenCalled();
 });
 
 test('rejects a successful response without valid user details', async () => {
@@ -165,7 +225,7 @@ test('rejects a successful response without valid user details', async () => {
   fireEvent.change(screen.getByLabelText('Password *'), { target: { value: 'password' } });
   fireEvent.click(screen.getByRole('button', { name: 'Login' }));
 
-  expect(await screen.findByRole('alert')).toHaveTextContent('Invalid login ID or password.');
+  expect(await screen.findByText('Invalid login ID or password.')).toHaveClass('required-field-error');
   expect(window.location.pathname).toBe('/login');
 });
 
@@ -185,7 +245,7 @@ test('rejects a successful response without a connection string', async () => {
   fireEvent.change(screen.getByLabelText('Password *'), { target: { value: 'password' } });
   fireEvent.click(screen.getByRole('button', { name: 'Login' }));
 
-  expect(await screen.findByRole('alert')).toHaveTextContent('Invalid login ID or password.');
+  expect(await screen.findByText('Invalid login ID or password.')).toHaveClass('required-field-error');
   expect(window.location.pathname).toBe('/login');
   expect(sessionStorage.getItem('azkopos.user')).toBeNull();
 });
@@ -313,7 +373,7 @@ test('Shop page saves the edited details with the authenticated user and connect
   window.history.replaceState({}, '', '/login');
 });
 
-test('Shop page requires a non-empty Shop Name before saving', async () => {
+test('Shop page shows a red validation message for an empty or whitespace-only Shop Name', async () => {
   window.history.replaceState({}, '', '/setting/shop');
   render(
     <UserContext.Provider value={{
@@ -330,12 +390,20 @@ test('Shop page requires a non-empty Shop Name before saving', async () => {
   );
 
   const shopNameInput = await screen.findByLabelText(/Shop Name/);
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Update' })).toBeEnabled());
+  fireEvent.change(shopNameInput, { target: { value: '' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Update' }));
+
+  expect(screen.getByRole('alert')).toHaveTextContent('Shop Name is required.');
+  expect(screen.getByRole('alert')).toHaveClass('required-field-error');
+  expect(shopNameInput).toHaveAttribute('aria-invalid', 'true');
+  expect(global.fetch).toHaveBeenCalledTimes(1);
+
   fireEvent.change(shopNameInput, { target: { value: '   ' } });
   fireEvent.click(screen.getByRole('button', { name: 'Update' }));
 
-  const validationMessage = screen.getByRole('alert');
-  expect(validationMessage).toHaveTextContent('Shop Name is required.');
-  expect(validationMessage).toHaveClass('shop-field-error');
+  expect(screen.getByRole('alert')).toHaveTextContent('Shop Name is required.');
+  expect(screen.getByRole('alert')).toHaveClass('required-field-error');
   expect(shopNameInput).toHaveAttribute('aria-invalid', 'true');
   expect(global.fetch).toHaveBeenCalledTimes(1);
 
@@ -406,7 +474,8 @@ test.each([
   ['Shop', '/setting/shop'],
   ['Party', '/setting/party'],
   ['User', '/setting/user'],
-])('%s opens its menu page or shows that it is not created', async (title, pathname) => {
+  ['Expense Head', '/setting/expense-head'],
+])('%s opens its menu page', async (title, pathname) => {
   window.history.replaceState({}, '', pathname);
   render(
     <UserContext.Provider value={{
@@ -416,6 +485,7 @@ test.each([
         { menuID: 6, menuName: 'Shop', menuParentID: 1, menuURL: 'Shop.aspx', menuType: 2 },
         { menuID: 7, menuName: 'Party', menuParentID: 1, menuURL: 'Party.aspx', menuType: 2 },
         { menuID: 8, menuName: 'User', menuParentID: 1, menuURL: 'User.aspx', menuType: 2 },
+        { menuID: 9, menuName: 'Expense Head', menuParentID: 1, menuURL: 'ExpenseHead.aspx', menuType: 2 },
       ],
     }}
     >
@@ -433,9 +503,122 @@ test.each([
     expect(screen.getByRole('searchbox', { name: 'Search Party' })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: 'Party Name' })).toBeInTheDocument();
     expect(screen.getByText('No parties available.')).toBeInTheDocument();
+  } else if (title === 'Expense Head') {
+    expect(screen.getByTestId('expense-head-page')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Setting / Expense Head' })).toBeInTheDocument();
+    expect(screen.getByRole('searchbox', { name: 'Search Expense Head' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Expense Head Name' })).toBeInTheDocument();
+    expect(screen.getByText('No expense heads available.')).toBeInTheDocument();
   } else {
-    expect(screen.getByRole('alert')).toHaveTextContent(`Page for ${title} has not been created yet.`);
+    expect(screen.getByTestId('user-page')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Setting / User' })).toBeInTheDocument();
+    expect(screen.getByRole('searchbox', { name: 'Search User' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Login Name' })).toBeInTheDocument();
+    expect(screen.getByText('No users available.')).toBeInTheDocument();
   }
+});
+
+test('Expense Head page adds, edits, searches, and changes active status', () => {
+  window.history.replaceState({}, '', '/setting/expense-head');
+  render(
+    <UserContext.Provider value={{
+      menus: [
+        { menuID: 1, menuName: 'Setting', menuParentID: 0, menuType: 1 },
+        { menuID: 9, menuName: 'Expense Head', menuParentID: 1, menuURL: 'ExpenseHead.aspx', menuType: 2 },
+      ],
+    }}
+    >
+      <HomePage pathname="/setting/expense-head" onNavigate={jest.fn()} onLogout={jest.fn()} />
+    </UserContext.Provider>,
+  );
+
+  fireEvent.click(screen.getByRole('button', { name: 'Add Expense Head' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+  expect(screen.getByText('Expense Head Name is required.')).toHaveClass('required-field-error');
+  expect(screen.getByLabelText(/Expense Head Name/)).toHaveAttribute(
+    'aria-describedby',
+    'expense-head-name-error',
+  );
+
+  fireEvent.change(screen.getByLabelText(/Expense Head Name/), { target: { value: 'Travel' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+  expect(screen.getByRole('cell', { name: 'Travel' })).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole('button', { name: 'Edit Travel' }));
+  fireEvent.change(screen.getByLabelText(/Expense Head Name/), { target: { value: 'Transport' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+  expect(screen.getByRole('cell', { name: 'Transport' })).toBeInTheDocument();
+
+  fireEvent.change(screen.getByRole('searchbox', { name: 'Search Expense Head' }), { target: { value: 'missing' } });
+  expect(screen.getByText('No expense heads match your search.')).toBeInTheDocument();
+  fireEvent.change(screen.getByRole('searchbox', { name: 'Search Expense Head' }), { target: { value: '' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Deactivate Transport' }));
+  expect(screen.getByRole('button', { name: 'Activate Transport' })).toBeInTheDocument();
+  window.history.replaceState({}, '', '/login');
+});
+
+test('User page adds a user to the list and can cancel the form', () => {
+  window.history.replaceState({}, '', '/setting/user');
+  render(
+    <UserContext.Provider value={{
+      menus: [
+        { menuID: 1, menuName: 'Setting', menuParentID: 0, menuType: 1 },
+        { menuID: 8, menuName: 'User', menuParentID: 1, menuURL: 'User.aspx', menuType: 2 },
+      ],
+    }}
+    >
+      <HomePage pathname="/setting/user" onNavigate={jest.fn()} onLogout={jest.fn()} />
+    </UserContext.Provider>,
+  );
+
+  fireEvent.click(screen.getByRole('button', { name: 'Add User' }));
+  expect(screen.getByRole('region', { name: 'Add user' })).toBeInTheDocument();
+  expect(screen.getByLabelText('Admin')).toBeChecked();
+  expect(screen.getByLabelText('Data Entry')).not.toBeChecked();
+
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+  expect(screen.getByText('Login Name is required.')).toHaveClass('required-field-error');
+  expect(screen.getByText('Password is required.')).toHaveClass('required-field-error');
+  expect(screen.getByText('Employee Name is required.')).toHaveClass('required-field-error');
+
+  fireEvent.change(screen.getByLabelText(/Login Name/), { target: { value: 'demo' } });
+  fireEvent.change(screen.getByLabelText(/Password/), { target: { value: 'secret' } });
+  fireEvent.change(screen.getByLabelText(/Employee Name/), { target: { value: 'Demo Employee' } });
+  expect(screen.queryByText('Login Name is required.')).not.toBeInTheDocument();
+  expect(screen.queryByText('Password is required.')).not.toBeInTheDocument();
+  expect(screen.queryByText('Employee Name is required.')).not.toBeInTheDocument();
+  fireEvent.click(screen.getByLabelText('Data Entry'));
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+  expect(screen.getByRole('cell', { name: 'demo' })).toBeInTheDocument();
+  expect(screen.getByRole('cell', { name: 'Demo Employee' })).toBeInTheDocument();
+  expect(screen.getByRole('cell', { name: 'Data Entry' })).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole('button', { name: 'Add User' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+  expect(screen.getByRole('region', { name: 'User list' })).toBeInTheDocument();
+  window.history.replaceState({}, '', '/login');
+});
+
+test('Party appears after User in the sidebar menu', () => {
+  render(
+    <UserContext.Provider value={{
+      menus: [
+        { menuID: 1, menuName: 'Setting', menuParentID: 0, menuType: 1 },
+        { menuID: 7, menuName: 'Party', menuParentID: 1, menuURL: 'Party.aspx', menuType: 2 },
+        { menuID: 8, menuName: 'User', menuParentID: 1, menuURL: 'User.aspx', menuType: 2 },
+      ],
+    }}
+    >
+      <HomePage pathname="/dashboard" onNavigate={jest.fn()} onLogout={jest.fn()} />
+    </UserContext.Provider>,
+  );
+
+  fireEvent.click(screen.getByRole('button', { name: 'Setting' }));
+
+  const settingLinks = screen.getAllByRole('button')
+    .filter((button) => ['User', 'Party'].includes(button.textContent));
+  expect(settingLinks.map((button) => button.textContent)).toEqual(['User', 'Party']);
 });
 
 test('Party page opens and cancels the Add Party form', () => {
@@ -460,9 +643,44 @@ test('Party page opens and cancels the Add Party form', () => {
   expect(screen.getByLabelText('Address')).toBeInTheDocument();
   expect(screen.getByLabelText('Contact No')).toBeInTheDocument();
 
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+  expect(screen.getByText('Party Name is required.')).toHaveClass('required-field-error');
+  expect(screen.getByLabelText(/Party Name/)).toHaveAttribute('aria-describedby', 'party-name-error');
+  fireEvent.change(screen.getByLabelText(/Party Name/), { target: { value: 'Demo Party' } });
+  expect(screen.queryByText('Party Name is required.')).not.toBeInTheDocument();
+
   fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
   expect(screen.getByRole('region', { name: 'Party list' })).toBeInTheDocument();
   window.history.replaceState({}, '', '/login');
+});
+
+test('Company page shows a red message beside the required Company Name', () => {
+  render(<CompanyPage />);
+  fireEvent.click(screen.getByRole('button', { name: 'Add Company' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+  expect(screen.getByText('Company Name is required.')).toHaveClass('required-field-error');
+  expect(screen.getByLabelText(/Company Name/)).toHaveAttribute('aria-describedby', 'company-name-error');
+});
+
+test('Model page shows red messages beside both required fields', () => {
+  render(<ModelPage />);
+  fireEvent.click(screen.getByRole('button', { name: 'Add Model' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+  expect(screen.getByText('Company is required.')).toHaveClass('required-field-error');
+  expect(screen.getByText('Model Name is required.')).toHaveClass('required-field-error');
+  expect(screen.getByLabelText(/Company/)).toHaveAttribute('aria-describedby', 'model-company-error');
+  expect(screen.getByLabelText(/Model Name/)).toHaveAttribute('aria-describedby', 'model-name-error');
+});
+
+test('RamRom page shows a red message beside the required RamRom Name', () => {
+  render(<RamRomPage />);
+  fireEvent.click(screen.getByRole('button', { name: 'Add RamRom' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+  expect(screen.getByText('RamRom Name is required.')).toHaveClass('required-field-error');
+  expect(screen.getByLabelText(/RamRom Name/)).toHaveAttribute('aria-describedby', 'ramrom-name-error');
 });
 
 test('sidebar displays only groups and pages assigned by the API', () => {
@@ -488,6 +706,24 @@ test('sidebar displays only groups and pages assigned by the API', () => {
   fireEvent.click(screen.getByRole('button', { name: /Transactions/ }));
   fireEvent.click(screen.getByRole('button', { name: 'POS' }));
   expect(onNavigate).toHaveBeenCalledWith('/transactions/pos');
+});
+
+test('sidebar expands the active menu group when opening a menu URL directly', () => {
+  render(
+    <UserContext.Provider value={{
+      menus: [
+        { menuID: 2, menuName: 'Item Management', menuParentID: 0, menuType: 1 },
+        { menuID: 20, menuName: 'Company', menuParentID: 2, menuURL: 'Company.aspx', menuType: 2 },
+        { menuID: 21, menuName: 'Model', menuParentID: 2, menuURL: 'Model.aspx', menuType: 2 },
+      ],
+    }}
+    >
+      <HomePage pathname="/item-management/model" onNavigate={jest.fn()} onLogout={jest.fn()} />
+    </UserContext.Provider>,
+  );
+
+  expect(screen.getByRole('button', { name: 'Item Management' })).toHaveAttribute('aria-expanded', 'true');
+  expect(screen.getByRole('button', { name: 'Model' })).toBeInTheDocument();
 });
 
 test('root URL renders the login page without briefly showing the home page', () => {

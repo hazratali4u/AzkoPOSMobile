@@ -20,6 +20,8 @@ function getStoredUser() {
       && typeof user.employeeName === 'string'
       && user.employeeName.trim()
       && Number.isFinite(user.roleID)
+      && typeof user.connString === 'string'
+      && user.connString.trim()
     ) {
       return user;
     }

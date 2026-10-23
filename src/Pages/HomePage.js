@@ -1,7 +1,12 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useUser } from '../UserContext';
 import ShopPage from './ShopPage';
 import PartyPage from './PartyPage';
+import UserPage from './UserPage';
+import ExpenseHeadPage from './ExpenseHeadPage';
+import CompanyPage from './CompanyPage';
+import ModelPage from './ModelPage';
+import RamRomPage from './RamRomPage';
 
 const menuIcons = {
   1: 'mdi-settings',
@@ -19,14 +24,25 @@ function buildNavigation(menus) {
 
   return menus
     .filter((menu) => Number(menu.menuType) === 1 && Number(menu.menuParentID) === 0)
-    .map((parent) => ({
-      id: parent.menuID,
-      title: parent.menuName,
-      icon: menuIcons[parent.menuID] || 'mdi-view-grid-outline',
-      pages: menus
+    .map((parent) => {
+      const pages = menus
         .filter((menu) => Number(menu.menuType) === 2 && Number(menu.menuParentID) === Number(parent.menuID))
-        .map((menu) => ({ id: menu.menuID, title: menu.menuName })),
-    }))
+        .map((menu) => ({ id: menu.menuID, title: menu.menuName }));
+      const userIndex = pages.findIndex((page) => page.title === 'User');
+      const partyIndex = pages.findIndex((page) => page.title === 'Party');
+
+      if (userIndex !== -1 && partyIndex !== -1 && partyIndex < userIndex) {
+        const [partyPage] = pages.splice(partyIndex, 1);
+        pages.splice(userIndex, 0, partyPage);
+      }
+
+      return {
+        id: parent.menuID,
+        title: parent.menuName,
+        icon: menuIcons[parent.menuID] || 'mdi-view-grid-outline',
+        pages,
+      };
+    })
     .filter((group) => group.pages.length > 0);
 }
 
@@ -158,14 +174,25 @@ function HomePage({ pathname, onNavigate, onLogout }) {
   const pageComponents = {
     party: PartyPage,
     shop: ShopPage,
+    user: UserPage,
+    'expense head': ExpenseHeadPage,
+    company: CompanyPage,
+    model: ModelPage,
+    ramrom: RamRomPage,
   };
   const PageComponent = pageComponents[activePage.toLowerCase()];
   const employeeName = user && user.employeeName ? user.employeeName : 'Admin User';
   const roleLabel = user && user.roleID != null ? `Role ${user.roleID}` : 'Administrator';
-  const [expandedMenu, setExpandedMenu] = useState('');
+  const [expandedMenu, setExpandedMenu] = useState(activeEntry?.group.title || '');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [sidebarMini, setSidebarMini] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+
+  useEffect(() => {
+    if (activeEntry) {
+      setExpandedMenu(activeEntry.group.title);
+    }
+  }, [activeEntry?.group.title, pathname]);
 
   const toggleNavigation = () => {
     if (window.innerWidth <= 900) {
@@ -189,8 +216,8 @@ function HomePage({ pathname, onNavigate, onLogout }) {
       <button className={`sidebar-backdrop${mobileMenuOpen ? ' is-visible' : ''}`} aria-label="Close navigation" onClick={() => setMobileMenuOpen(false)} />
       <aside className={`home-sidebar${mobileMenuOpen ? ' is-open' : ''}`}>
         <div className="sidebar-brand">
-          <img className="sidebar-brand-logo" src="/assets/images/logo.svg" alt="AzkoPOS" />
-          <img className="sidebar-brand-mini" src="/assets/images/logo-mini.svg" alt="AzkoPOS" />
+          <img className="sidebar-brand-logo" src="/assets/images/logo.png" alt="AzkoPOS" />
+          <img className="sidebar-brand-mini" src="/assets/images/logo-small.png" alt="AzkoPOS" />
           <h4 className="visually-hidden">AzkoPOS</h4>
         </div>
         <nav className="sidebar-nav" aria-label="Main navigation">
@@ -212,7 +239,7 @@ function HomePage({ pathname, onNavigate, onLogout }) {
       <div className="home-main-area">
         <header className="home-topbar">
           <div className="topbar-left">
-            <img className="mobile-brand-logo" src="/assets/images/logo-mini.svg" alt="AzkoPOS" />
+            <img className="mobile-brand-logo" src="/assets/images/logo-small.png" alt="AzkoPOS" />
             <button className="menu-toggle" aria-label={mobileMenuOpen ? 'Close navigation' : 'Toggle navigation'} aria-expanded={mobileMenuOpen} onClick={toggleNavigation}>☰</button>
           </div>
           <div className="topbar-profile-wrap">
@@ -233,7 +260,7 @@ function HomePage({ pathname, onNavigate, onLogout }) {
                 Page for {activePage} has not been created yet.
               </div>}
         </main>
-        <footer className="home-footer"><span>Copyright © AzkoIT 2025</span><span>AzkoPOS · Business Manager</span></footer>
+        <footer className="home-footer"><span>Copyright © AzkoIT 2025</span></footer>
       </div>
     </div>
   );
