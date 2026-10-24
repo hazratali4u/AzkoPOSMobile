@@ -4,6 +4,7 @@ import CompanyPage from './Pages/CompanyPage';
 import HomePage from './Pages/HomePage';
 import ModelPage from './Pages/ModelPage';
 import RamRomPage from './Pages/RamRomPage';
+import UserPage from './Pages/UserPage';
 import UserContext from './UserContext';
 
 const originalFetch = global.fetch;
@@ -476,6 +477,13 @@ test.each([
   ['User', '/setting/user'],
   ['Expense Head', '/setting/expense-head'],
 ])('%s opens its menu page', async (title, pathname) => {
+  if (title === 'User') {
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => [],
+    });
+  }
+
   window.history.replaceState({}, '', pathname);
   render(
     <UserContext.Provider value={{
@@ -514,7 +522,7 @@ test.each([
     expect(screen.getByRole('heading', { level: 1, name: 'Setting / User' })).toBeInTheDocument();
     expect(screen.getByRole('searchbox', { name: 'Search User' })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: 'Login Name' })).toBeInTheDocument();
-    expect(screen.getByText('No users available.')).toBeInTheDocument();
+    expect(await screen.findByText('No users available.')).toBeInTheDocument();
   }
 });
 
@@ -557,10 +565,33 @@ test('Expense Head page adds, edits, searches, and changes active status', () =>
   window.history.replaceState({}, '', '/login');
 });
 
-test('User page adds a user to the list and can cancel the form', () => {
+test('User page adds a user to the list and can cancel the form', async () => {
+  global.fetch
+    .mockResolvedValueOnce({
+      ok: true,
+      json: async () => [],
+    })
+    .mockResolvedValueOnce({
+      ok: true,
+    })
+    .mockResolvedValueOnce({
+      ok: true,
+      json: async () => [{
+        userID: 3,
+        loginID: 'demo',
+        password: 'secret',
+        employeeName: 'Demo Employee',
+        roleID: 2,
+        status: 'Active',
+        role: 'Data Entry',
+      }],
+    });
+
   window.history.replaceState({}, '', '/setting/user');
   render(
     <UserContext.Provider value={{
+      userID: 1,
+      connString: 'test-connection-string',
       menus: [
         { menuID: 1, menuName: 'Setting', menuParentID: 0, menuType: 1 },
         { menuID: 8, menuName: 'User', menuParentID: 1, menuURL: 'User.aspx', menuType: 2 },
@@ -590,14 +621,227 @@ test('User page adds a user to the list and can cancel the form', () => {
   fireEvent.click(screen.getByLabelText('Data Entry'));
   fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
-  expect(screen.getByRole('cell', { name: 'demo' })).toBeInTheDocument();
-  expect(screen.getByRole('cell', { name: 'Demo Employee' })).toBeInTheDocument();
-  expect(screen.getByRole('cell', { name: 'Data Entry' })).toBeInTheDocument();
+  await waitFor(() => {
+    expect(screen.getByRole('cell', { name: 'demo' })).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: 'Demo Employee' })).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: 'Data Entry' })).toBeInTheDocument();
+    expect(global.fetch).toHaveBeenNthCalledWith(
+      2,
+      'https://api.azkopos.com/AzkoAPI/InsertUpdateUser',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ConnectionString: 'test-connection-string',
+        },
+        body: JSON.stringify({
+          UserID: 0,
+          LoginID: 'demo',
+          Password: 'secret',
+          EmployeeName: 'Demo Employee',
+          RoleID: 2,
+          CreateUpdatedBy: 1,
+          TypeID: 1,
+        }),
+      },
+    );
+  });
 
+  expect(screen.getByText('User saved successfully.')).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Add User' }));
+  expect(screen.queryByText('User saved successfully.')).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
   expect(screen.getByRole('region', { name: 'User list' })).toBeInTheDocument();
   window.history.replaceState({}, '', '/login');
+});
+
+test('User page saves edits with the selected user ID', async () => {
+  global.fetch
+    .mockResolvedValueOnce({
+      ok: true,
+      json: async () => [{
+        userID: 2,
+        loginID: 'test',
+        password: 'test',
+        employeeName: 'DEO',
+        roleID: 2,
+        status: 'Active',
+        role: 'Data Entry',
+      }],
+    })
+    .mockResolvedValueOnce({
+      ok: true,
+    })
+    .mockResolvedValueOnce({
+      ok: true,
+      json: async () => [{
+        userID: 2,
+        loginID: 'test-updated',
+        password: 'updated',
+        employeeName: 'DEO Updated',
+        roleID: 1,
+        status: 'Active',
+        role: 'Admin',
+      }],
+    });
+
+  render(
+    <UserContext.Provider value={{ userID: 1, connString: 'test-connection-string' }}>
+      <UserPage />
+    </UserContext.Provider>,
+  );
+
+  fireEvent.click(await screen.findByRole('button', { name: 'Edit test' }));
+  fireEvent.change(screen.getByLabelText(/Login Name/), { target: { value: 'test-updated' } });
+  fireEvent.change(screen.getByLabelText(/Password/), { target: { value: 'updated' } });
+  fireEvent.change(screen.getByLabelText(/Employee Name/), { target: { value: 'DEO Updated' } });
+  fireEvent.click(screen.getByLabelText('Admin'));
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+  expect(await screen.findByRole('cell', { name: 'DEO Updated' })).toBeInTheDocument();
+  expect(global.fetch).toHaveBeenNthCalledWith(
+    2,
+    'https://api.azkopos.com/AzkoAPI/InsertUpdateUser',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ConnectionString: 'test-connection-string',
+      },
+      body: JSON.stringify({
+        UserID: 2,
+        LoginID: 'test-updated',
+        Password: 'updated',
+        EmployeeName: 'DEO Updated',
+        RoleID: 1,
+        CreateUpdatedBy: 1,
+        TypeID: 2,
+      }),
+    },
+  );
+});
+
+test('User page sends inactive and active status changes to the API', async () => {
+  global.fetch
+    .mockResolvedValueOnce({
+      ok: true,
+      json: async () => [{
+        userID: 2,
+        loginID: 'test',
+        password: 'test',
+        employeeName: 'DEO',
+        roleID: 2,
+        status: 'Active',
+        role: 'Data Entry',
+      }],
+    })
+    .mockResolvedValueOnce({ ok: true })
+    .mockResolvedValueOnce({ ok: true });
+
+  render(
+    <UserContext.Provider value={{ userID: 1, connString: 'test-connection-string' }}>
+      <UserPage />
+    </UserContext.Provider>,
+  );
+
+  fireEvent.click(await screen.findByRole('button', { name: 'Deactivate test' }));
+  expect(await screen.findByRole('button', { name: 'Activate test' })).toBeInTheDocument();
+  expect(global.fetch).toHaveBeenNthCalledWith(
+    2,
+    'https://api.azkopos.com/AzkoAPI/InsertUpdateUser',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ConnectionString: 'test-connection-string',
+      },
+      body: JSON.stringify({
+        UserID: 2,
+        LoginID: 'test',
+        Password: 'test',
+        EmployeeName: 'DEO',
+        RoleID: 2,
+        CreateUpdatedBy: 1,
+        TypeID: 3,
+      }),
+    },
+  );
+
+  fireEvent.click(screen.getByRole('button', { name: 'Activate test' }));
+  expect(await screen.findByRole('button', { name: 'Deactivate test' })).toBeInTheDocument();
+  expect(global.fetch).toHaveBeenNthCalledWith(
+    3,
+    'https://api.azkopos.com/AzkoAPI/InsertUpdateUser',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ConnectionString: 'test-connection-string',
+      },
+      body: JSON.stringify({
+        UserID: 2,
+        LoginID: 'test',
+        Password: 'test',
+        EmployeeName: 'DEO',
+        RoleID: 2,
+        CreateUpdatedBy: 1,
+        TypeID: 4,
+      }),
+    },
+  );
+});
+
+test('User page loads users from the API and keeps IDs hidden', async () => {
+  global.fetch.mockResolvedValueOnce({
+    ok: true,
+    json: async () => [
+      {
+        userID: 1,
+        loginID: 'Admin',
+        password: 'myadmin',
+        employeeName: 'Hazrat Ali',
+        roleID: 1,
+        status: 'Active',
+        role: 'Admin',
+      },
+      {
+        userID: 2,
+        loginID: 'test',
+        password: 'test',
+        employeeName: 'DEO',
+        roleID: 2,
+        status: 'Active',
+        role: 'Data Entry',
+      },
+    ],
+  });
+
+  render(
+    <UserContext.Provider value={{ connString: 'test-connection-string' }}>
+      <UserPage />
+    </UserContext.Provider>,
+  );
+
+  expect(await screen.findByRole('cell', { name: 'Hazrat Ali' })).toBeInTheDocument();
+  expect(screen.getAllByRole('cell', { name: 'Admin' })).toHaveLength(2);
+  expect(screen.getByRole('cell', { name: 'DEO' })).toBeInTheDocument();
+  expect(screen.getByRole('cell', { name: 'Data Entry' })).toBeInTheDocument();
+  expect(screen.getByRole('columnheader', { name: 'Login Name' })).toBeInTheDocument();
+  expect(screen.queryByRole('columnheader', { name: 'userID' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('columnheader', { name: 'roleID' })).not.toBeInTheDocument();
+  expect(document.querySelector('input[name="userID"]')).toHaveAttribute('type', 'hidden');
+  expect(document.querySelector('input[name="userID"]')).toHaveValue('1');
+  expect(document.querySelector('input[name="roleID"]')).toHaveAttribute('type', 'hidden');
+  expect(document.querySelector('input[name="roleID"]')).toHaveValue('1');
+  expect(global.fetch).toHaveBeenCalledWith(
+    'https://api.azkopos.com/AzkoAPI/GetAllUserData?TypeID=2',
+    {
+      method: 'GET',
+      headers: {
+        ConnectionString: 'test-connection-string',
+      },
+    },
+  );
 });
 
 test('Party appears after User in the sidebar menu', () => {
