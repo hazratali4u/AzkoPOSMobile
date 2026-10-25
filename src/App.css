@@ -355,6 +355,14 @@
 .sidebar-backdrop { display: none; }
 
 @media (max-width: 768px) {
+  .party-table, .party-table tbody, .party-table tr, .party-table td { display: block; width: 100%; }
+  .party-table thead { display: none; }
+  .party-table tr { margin-bottom: 15px; padding: 8px; border: 1px solid #ddd; border-radius: 8px; background: #fff; }
+  .party-table td { position: relative; min-height: 42px; padding: 10px 10px 10px 45%; border: 0; border-bottom: 1px solid #eee; text-align: left; overflow-wrap: anywhere; }
+  .party-table td:last-child { border-bottom: 0; }
+  .party-table td::before { position: absolute; top: 10px; left: 10px; width: 40%; font-weight: 500; content: attr(data-label); }
+  .party-table .party-empty-state { padding-left: 10px; text-align: center !important; }
+  .party-table .party-empty-state::before { content: none; }
   .user-table, .user-table tbody, .user-table tr, .user-table td { display: block; width: 100%; }
   .user-table thead { display: none; }
   .user-table tr { margin-bottom: 15px; padding: 8px; border: 1px solid #ddd; border-radius: 8px; background: #fff; }
@@ -393,31 +401,36 @@
   .party-card { padding: 18px 15px; }
   .party-toolbar { align-items: stretch; flex-direction: column; }
   .party-toolbar button { width: 100%; }
-  .party-table th, .party-table td { padding: 8px; }
+  .party-table th { padding: 8px; }
+  .party-table td { padding: 8px 8px 8px 45%; }
   .party-form-actions { flex-direction: column; }
   .party-form-actions button { width: 100%; }
   .user-card { padding: 18px 15px; }
   .user-toolbar { align-items: stretch; flex-direction: column; }
   .user-toolbar button { width: 100%; }
-  .user-table th, .user-table td { padding: 8px; }
+  .user-table th { padding: 8px; }
+  .user-table td { padding: 8px 8px 8px 45%; }
   .user-form-actions { flex-direction: column; }
   .user-form-actions button { width: 100%; }
   .expense-head-card { padding: 18px 15px; }
   .expense-head-toolbar { align-items: stretch; flex-direction: column; }
   .expense-head-toolbar button { width: 100%; }
-  .expense-head-table th, .expense-head-table td { padding: 8px; }
+  .expense-head-table th { padding: 8px; }
+  .expense-head-table td { padding: 8px 8px 8px 45%; }
   .expense-head-form-actions { flex-direction: column; }
   .expense-head-form-actions button { width: 100%; }
   .company-card { padding: 18px 15px; }
   .company-toolbar { align-items: stretch; flex-direction: column; }
   .company-toolbar button { width: 100%; }
-  .company-table th, .company-table td { padding: 8px; }
+  .company-table th { padding: 8px; }
+  .company-table td { padding: 8px 8px 8px 45%; }
   .company-form-actions { flex-direction: column; }
   .company-form-actions button { width: 100%; }
   .model-card { padding: 18px 15px; }
   .model-toolbar { align-items: stretch; flex-direction: column; }
   .model-toolbar button { width: 100%; }
-  .model-table th, .model-table td { padding: 8px; }
+  .model-table th { padding: 8px; }
+  .model-table td { padding: 8px 8px 8px 45%; }
   .model-form-actions { flex-direction: column; }
   .model-form-actions button { width: 100%; }
 }
