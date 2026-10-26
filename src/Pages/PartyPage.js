@@ -193,7 +193,7 @@ function PartyPage() {
       || !Number.isFinite(user && user.userID)
       || !Number.isFinite(selectedParty && selectedParty.partyID)
     ) {
-      setSaveError('Unable to update party status.');
+      setSaveError('Unable to update expensehead status.');
       return;
     }
 
