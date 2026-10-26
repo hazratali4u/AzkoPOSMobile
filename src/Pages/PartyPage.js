@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useUser } from '../UserContext';
-import './PartyPage.css';
+import '../css/PartyPage.css';
 
 const emptyParty = {
   partyID: '',

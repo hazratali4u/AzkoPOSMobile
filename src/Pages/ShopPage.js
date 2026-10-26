@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useUser } from '../UserContext';
-import './ShopPage.css';
+import '../css/ShopPage.css';
 
 function ShopPage() {
   const user = useUser();

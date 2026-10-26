@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import './CompanyPage.css';
+import '../css/CompanyPage.css';
 
 function CompanyPage() {
   const [companies, setCompanies] = useState([]);

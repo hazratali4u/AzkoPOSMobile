@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useUser } from '../UserContext';
-import './HomePage.css';
+import '../css/HomePage.css';
 import ShopPage from './ShopPage';
 import PartyPage from './PartyPage';
 import UserPage from './UserPage';
