@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import './ModelPage.css';
 
 function RamRomPage() {
   const [ramRoms, setRamRoms] = useState([]);

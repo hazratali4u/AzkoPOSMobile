@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useUser } from '../UserContext';
+import './ShopPage.css';
 
 function ShopPage() {
   const user = useUser();

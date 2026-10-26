@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import './ExpenseHeadPage.css';
 
 function ExpenseHeadPage() {
   const [expenseHeads, setExpenseHeads] = useState([]);

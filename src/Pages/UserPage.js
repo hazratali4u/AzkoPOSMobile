@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useUser } from '../UserContext';
+import './UserPage.css';
 
 const emptyUser = {
   userID: '',
