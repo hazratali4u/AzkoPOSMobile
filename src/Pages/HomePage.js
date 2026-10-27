@@ -8,6 +8,7 @@ import ExpenseHeadPage from './ExpenseHeadPage';
 import CompanyPage from './CompanyPage';
 import ModelPage from './ModelPage';
 import RamRomPage from './RamRomPage';
+import PurchasePage from './PurchasePage';
 
 const menuIcons = {
   1: 'mdi-settings',
@@ -180,6 +181,7 @@ function HomePage({ pathname, onNavigate, onLogout }) {
     company: CompanyPage,
     model: ModelPage,
     ramrom: RamRomPage,
+    purchase: PurchasePage,
   };
   const PageComponent = pageComponents[activePage.toLowerCase()];
   const employeeName = user && user.employeeName ? user.employeeName : 'Admin User';
