@@ -37,6 +37,13 @@
 .purchase-field { display: grid; gap: 7px; min-width: 0; }
 .purchase-field label, .purchase-choice-field legend { color: var(--ink); font-size: 12px; font-weight: 500; }
 .purchase-field label span { color: #d9534f; }
+.purchase-supplier-combobox { position: relative; }
+.purchase-supplier-options { position: absolute; z-index: 10; top: calc(100% + 2px); right: 0; left: 0; max-height: 240px; overflow-y: auto; border: 1px solid #d9deea; border-radius: 4px; background: #fff; box-shadow: 0 4px 10px rgb(0 0 0 / 12%); }
+.purchase-supplier-option, .purchase-supplier-no-options { padding: 10px 12px; color: var(--ink); font-size: 13px; }
+.purchase-supplier-option { cursor: pointer; }
+.purchase-supplier-option:hover, .purchase-supplier-option.is-active { background: #f0f4ff; }
+.purchase-supplier-no-options { color: var(--muted); }
+.purchase-field .page-search-input { padding-left: 36px; }
 .purchase-field input, .purchase-field select { min-width: 0; padding: 9px 11px; outline: none; }
 .purchase-field input:focus, .purchase-field select:focus, .purchase-search-wrap input:focus { border-color: #8d99f8; box-shadow: 0 0 0 3px rgb(63 80 246 / 9%); }
 .purchase-choice-field { display: grid; grid-template-columns: repeat(2, max-content); align-content: end; gap: 8px 16px; min-width: 0; margin: 0; padding: 0; border: 0; }

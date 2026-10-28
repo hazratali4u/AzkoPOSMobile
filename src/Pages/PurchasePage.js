@@ -1,8 +1,87 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useUser } from '../UserContext';
 import '../css/PurchasePage.css';
 
 function PurchasePage() {
+  const user = useUser();
+  const connString = user && user.connString;
   const [isAddingPurchase, setIsAddingPurchase] = useState(false);
+  const [suppliers, setSuppliers] = useState([]);
+  const [isLoadingSuppliers, setIsLoadingSuppliers] = useState(false);
+  const [supplierLoadError, setSupplierLoadError] = useState('');
+  const [reloadSuppliersKey, setReloadSuppliersKey] = useState(0);
+  const [supplierSearch, setSupplierSearch] = useState('');
+  const [isSupplierDropdownOpen, setIsSupplierDropdownOpen] = useState(false);
+  const [activeSupplierIndex, setActiveSupplierIndex] = useState(0);
+  const [supplier, setSupplier] = useState('');
+
+  useEffect(() => {
+    if (!isAddingPurchase) {
+      return undefined;
+    }
+
+    let isActive = true;
+
+    async function loadSuppliers() {
+      setSuppliers([]);
+      setSupplierLoadError('');
+
+      if (typeof connString !== 'string' || !connString.trim()) {
+        setIsLoadingSuppliers(false);
+        setSupplierLoadError('Unable to load suppliers.');
+        return;
+      }
+
+      setIsLoadingSuppliers(true);
+      try {
+        const response = await fetch('https://api.azkopos.com/Party/GetPartyData?TypeID=1', {
+          method: 'GET',
+          headers: {
+            ConnectionString: connString,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Supplier request failed.');
+        }
+
+        const data = await response.json();
+        if (!Array.isArray(data) || data.some((item) => (
+          !item
+          || !Number.isFinite(item.partyID)
+          || typeof item.name !== 'string'
+        ))) {
+          throw new Error('Supplier response is invalid.');
+        }
+
+        if (isActive) {
+          setSuppliers(data);
+        }
+      } catch {
+        if (isActive) {
+          setSupplierLoadError('Unable to load suppliers. Please try again.');
+        }
+      } finally {
+        if (isActive) {
+          setIsLoadingSuppliers(false);
+        }
+      }
+    }
+
+    loadSuppliers();
+    return () => {
+      isActive = false;
+    };
+  }, [connString, isAddingPurchase, reloadSuppliersKey]);
+
+  const filteredSuppliers = useMemo(() => {
+    const query = supplierSearch.trim().toLowerCase();
+    return suppliers.filter((supplierOption) => supplierOption.name.toLowerCase().includes(query));
+  }, [suppliers, supplierSearch]);
+
+  const selectedSupplierName = suppliers.find(
+    (supplierOption) => String(supplierOption.partyID) === supplier,
+  )?.name || '';
 
   return (
     <div className="section-page purchase-page" data-testid="purchase-page">
@@ -86,9 +165,98 @@ function PurchasePage() {
             </fieldset>
             <div className="purchase-field">
               <label htmlFor="purchase-supplier">Supplier <span aria-hidden="true">*</span></label>
-              <select id="purchase-supplier" defaultValue="">
-                <option value="" disabled>Select Supplier</option>
-              </select>
+              <div className="purchase-supplier-combobox">
+                <input
+                  id="purchase-supplier"
+                  type="text"
+                  role="combobox"
+                  autoComplete="off"
+                  placeholder={isLoadingSuppliers ? 'Loading suppliers...' : 'Select Supplier'}
+                  value={isSupplierDropdownOpen ? supplierSearch : selectedSupplierName}
+                  aria-autocomplete="list"
+                  aria-controls="purchase-supplier-options"
+                  aria-expanded={isSupplierDropdownOpen}
+                  aria-activedescendant={
+                    isSupplierDropdownOpen && filteredSuppliers[activeSupplierIndex]
+                      ? `purchase-supplier-option-${filteredSuppliers[activeSupplierIndex].partyID}`
+                      : undefined
+                  }
+                  onFocus={() => {
+                    setSupplierSearch('');
+                    setActiveSupplierIndex(0);
+                    setIsSupplierDropdownOpen(true);
+                  }}
+                  onBlur={() => setIsSupplierDropdownOpen(false)}
+                  onChange={(event) => {
+                    setSupplier('');
+                    setSupplierSearch(event.target.value);
+                    setActiveSupplierIndex(0);
+                    setIsSupplierDropdownOpen(true);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === 'ArrowDown') {
+                      event.preventDefault();
+                      setIsSupplierDropdownOpen(true);
+                      setActiveSupplierIndex((index) => (
+                        filteredSuppliers.length ? Math.min(index + 1, filteredSuppliers.length - 1) : 0
+                      ));
+                    } else if (event.key === 'ArrowUp') {
+                      event.preventDefault();
+                      setIsSupplierDropdownOpen(true);
+                      setActiveSupplierIndex((index) => Math.max(index - 1, 0));
+                    } else if (event.key === 'Enter' && isSupplierDropdownOpen && filteredSuppliers[activeSupplierIndex]) {
+                      event.preventDefault();
+                      const selectedSupplierOption = filteredSuppliers[activeSupplierIndex];
+                      setSupplier(String(selectedSupplierOption.partyID));
+                      setSupplierSearch('');
+                      setIsSupplierDropdownOpen(false);
+                    } else if (event.key === 'Escape') {
+                      setIsSupplierDropdownOpen(false);
+                      setSupplierSearch('');
+                    }
+                  }}
+                  disabled={isLoadingSuppliers}
+                />
+                {isSupplierDropdownOpen && (
+                  <div
+                    id="purchase-supplier-options"
+                    className="purchase-supplier-options"
+                    role="listbox"
+                    aria-label="Suppliers"
+                    onMouseDown={(event) => event.preventDefault()}
+                  >
+                    {filteredSuppliers.length > 0 ? filteredSuppliers.map((supplierOption, index) => (
+                      <div
+                        id={`purchase-supplier-option-${supplierOption.partyID}`}
+                        key={supplierOption.partyID}
+                        className={`purchase-supplier-option${index === activeSupplierIndex ? ' is-active' : ''}`}
+                        role="option"
+                        aria-selected={String(supplierOption.partyID) === supplier}
+                        onMouseEnter={() => setActiveSupplierIndex(index)}
+                        onClick={() => {
+                          setSupplier(String(supplierOption.partyID));
+                          setSupplierSearch('');
+                          setIsSupplierDropdownOpen(false);
+                        }}
+                      >
+                        {supplierOption.name}
+                      </div>
+                    )) : (
+                      <div className="purchase-supplier-no-options" role="status">
+                        {isLoadingSuppliers ? 'Loading suppliers...' : 'No suppliers found.'}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              {supplierLoadError && (
+                <span role="alert">
+                  {supplierLoadError}{' '}
+                  <button type="button" onClick={() => setReloadSuppliersKey((key) => key + 1)}>
+                    Retry
+                  </button>
+                </span>
+              )}
             </div>
             <label className="purchase-credit-option">
               <input type="checkbox" />
