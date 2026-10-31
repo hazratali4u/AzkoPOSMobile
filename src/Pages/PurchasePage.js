@@ -22,6 +22,11 @@ function PurchasePage() {
   const purchasePriceInputRef = useRef(null);
   const [isAddingPurchase, setIsAddingPurchase] = useState(false);
   const [purchaseDate, setPurchaseDate] = useState('');
+  const [invoiceNo, setInvoiceNo] = useState('');
+  const [remarks, setRemarks] = useState('');
+  const [isSavingPurchase, setIsSavingPurchase] = useState(false);
+  const [purchaseSaveError, setPurchaseSaveError] = useState('');
+  const [purchaseSaveMessage, setPurchaseSaveMessage] = useState('');
   const [itemImei, setItemImei] = useState('');
   const [itemPurchasePrice, setItemPurchasePrice] = useState('');
   const [itemSalePrice, setItemSalePrice] = useState('');
@@ -396,9 +401,122 @@ function PurchasePage() {
     setItemEntryError('');
   };
 
+  const savePurchase = async () => {
+    setPurchaseSaveError('');
+    setPurchaseSaveMessage('');
+
+    const partyID = Number(supplier);
+    const userID = user && user.userID;
+    const totalAmount = purchaseItems.reduce((sum, item) => sum + item.purchasePrice, 0);
+    const parsedCashAmount = Number(cashAmount);
+    const parsedOnlineAmount = Number(onlineAmount);
+
+    if (typeof connString !== 'string' || !connString.trim() || !Number.isFinite(userID)) {
+      setPurchaseSaveError('Unable to save purchase. Please sign in again.');
+      return;
+    }
+
+    if (!Number.isFinite(partyID) || partyID <= 0) {
+      setPurchaseSaveError('Select a supplier before saving.');
+      return;
+    }
+
+    if (!purchaseDate) {
+      setPurchaseSaveError('Purchase date is required.');
+      return;
+    }
+
+    if (purchaseItems.length === 0) {
+      setPurchaseSaveError('Add at least one item before saving.');
+      return;
+    }
+
+    if (
+      !Number.isFinite(parsedCashAmount)
+      || !Number.isFinite(parsedOnlineAmount)
+      || parsedCashAmount < 0
+      || parsedOnlineAmount < 0
+    ) {
+      setPurchaseSaveError('Enter valid cash and online transfer amounts.');
+      return;
+    }
+
+    const paidAmount = isCreditPurchase ? 0 : parsedCashAmount + parsedOnlineAmount;
+    const purchase = {
+      PurchaseID: 0,
+      PurchaseType: 1,
+      PurchaseDate: purchaseDate,
+      PartyType: 1,
+      PartyID: partyID,
+      InvoiceNo: invoiceNo.trim(),
+      Remarks: remarks.trim(),
+      TotalAmount: totalAmount,
+      PaidAmount: paidAmount,
+      RemainingAmount: Math.max(totalAmount - paidAmount, 0),
+      Items: purchaseItems.map((item) => ({
+        ItemID: Number(item.modelID),
+        RamRomID: Number(item.ramRomID),
+        IMEI: item.imei,
+        PurchasePrice: item.purchasePrice,
+        SalePrice: item.salePrice,
+        IsSold: 0,
+      })),
+    };
+
+    setIsSavingPurchase(true);
+    try {
+      const response = await fetch('https://api.azkopos.com/Purchase/InsertUpdatePurchase', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ConnectionString: connString,
+        },
+        body: JSON.stringify({
+          UserID: userID,
+          TypeID: 1,
+          JsonString: JSON.stringify(purchase),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Purchase save request failed. Please try again.');
+      }
+
+      const result = await response.json();
+      if (!result || typeof result.status !== 'boolean') {
+        throw new Error('Purchase response is invalid. Please try again.');
+      }
+
+      if (!result.status) {
+        setPurchaseSaveError(
+          typeof result.message === 'string' && result.message
+            ? result.message
+            : 'Unable to save purchase.',
+        );
+        return;
+      }
+
+      if (!Number.isFinite(result.purchaseID)) {
+        throw new Error('Purchase response is invalid. Please try again.');
+      }
+
+      setPurchaseSaveMessage(
+        result.message || `Purchase ${result.purchaseID} saved successfully.`,
+      );
+      setIsAddingPurchase(false);
+    } catch (error) {
+      setPurchaseSaveError(
+        error instanceof Error ? error.message : 'Unable to save purchase. Please try again.',
+      );
+    } finally {
+      setIsSavingPurchase(false);
+    }
+  };
+
   return (
     <div className={`section-page purchase-page${isAddingPurchase ? ' is-adding-purchase' : ''}`} data-testid="purchase-page">
       <h1>Transactions / Purchase</h1>
+      {purchaseSaveMessage && <p role="status">{purchaseSaveMessage}</p>}
 
       {!isAddingPurchase ? (
         <section className="purchase-card" aria-labelledby="purchase-list-title">        
@@ -407,7 +525,15 @@ function PurchasePage() {
             <span className="purchase-search-icon" aria-hidden="true">⌕</span>
             <input type="search" placeholder="Search Purchase" aria-label="Search purchases" />
           </label>
-          <button className="purchase-primary-button" type="button" onClick={() => setIsAddingPurchase(true)}>
+          <button
+            className="purchase-primary-button"
+            type="button"
+            onClick={() => {
+              setPurchaseSaveError('');
+              setPurchaseSaveMessage('');
+              setIsAddingPurchase(true);
+            }}
+          >
             <span aria-hidden="true">＋</span> Add Purchase
           </button>
         </div>
@@ -620,11 +746,23 @@ function PurchasePage() {
             </div>
             <div className="purchase-field">
               <label htmlFor="purchase-invoice">Invoice No</label>
-              <input id="purchase-invoice" type="text" placeholder="Invoice No" />
+              <input
+                id="purchase-invoice"
+                type="text"
+                placeholder="Invoice No"
+                value={invoiceNo}
+                onChange={(event) => setInvoiceNo(event.target.value)}
+              />
             </div>
             <div className="purchase-field">
               <label htmlFor="purchase-remarks">Remarks</label>
-              <input id="purchase-remarks" type="text" placeholder="Remarks" />
+              <input
+                id="purchase-remarks"
+                type="text"
+                placeholder="Remarks"
+                value={remarks}
+                onChange={(event) => setRemarks(event.target.value)}
+              />
             </div>
           </div>
         </div>
@@ -946,8 +1084,26 @@ function PurchasePage() {
         </div>
 
         <div className="purchase-form-actions">
-          <button className="purchase-save-button" type="button">Save Purchase</button>
-          <button className="purchase-cancel-button" type="button" onClick={() => setIsAddingPurchase(false)}>Cancel</button>
+          {purchaseSaveError && <p className="purchase-item-error" role="alert">{purchaseSaveError}</p>}
+          <button
+            className="purchase-save-button"
+            type="button"
+            onClick={savePurchase}
+            disabled={isSavingPurchase}
+          >
+            {isSavingPurchase ? 'Saving...' : 'Save Purchase'}
+          </button>
+          <button
+            className="purchase-cancel-button"
+            type="button"
+            onClick={() => {
+              setPurchaseSaveError('');
+              setIsAddingPurchase(false);
+            }}
+            disabled={isSavingPurchase}
+          >
+            Cancel
+          </button>
         </div>
         </section>
       )}
