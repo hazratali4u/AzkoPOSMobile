@@ -13,6 +13,9 @@ function ModelPage() {
   const [isLoadingCompanies, setIsLoadingCompanies] = useState(Boolean(connString));
   const [companyLoadError, setCompanyLoadError] = useState('');
   const [reloadCompaniesKey, setReloadCompaniesKey] = useState(0);
+  const [companySearch, setCompanySearch] = useState('');
+  const [isCompanyDropdownOpen, setIsCompanyDropdownOpen] = useState(false);
+  const [activeCompanyIndex, setActiveCompanyIndex] = useState(0);
   const [search, setSearch] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [editingIndex, setEditingIndex] = useState(null);
@@ -151,9 +154,21 @@ function ModelPage() {
       .filter((model) => model.name.toLowerCase().includes(query));
   }, [models, search]);
 
+  const filteredCompanies = useMemo(() => {
+    const query = companySearch.trim().toLowerCase();
+    return companies.filter((companyOption) => companyOption.name.toLowerCase().includes(query));
+  }, [companies, companySearch]);
+
+  const selectedCompanyName = companies.find(
+    (companyOption) => String(companyOption.companyID) === company,
+  )?.name || (editingIndex === null ? '' : models[editingIndex]?.companyName || '');
+
   const openAddForm = () => {
     setName('');
     setCompany('');
+    setCompanySearch('');
+    setIsCompanyDropdownOpen(false);
+    setActiveCompanyIndex(0);
     setEditingIndex(null);
     setErrors({ company: '', name: '' });
     setSaveError('');
@@ -164,6 +179,9 @@ function ModelPage() {
   const openEditForm = (index) => {
     setName(models[index].name);
     setCompany(String(models[index].companyID));
+    setCompanySearch('');
+    setIsCompanyDropdownOpen(false);
+    setActiveCompanyIndex(0);
     setEditingIndex(index);
     setErrors({ company: '', name: '' });
     setSaveError('');
@@ -284,16 +302,19 @@ function ModelPage() {
       {!isEditing ? (
         <section className="model-card" aria-label="Model list">
           <div className="model-toolbar">
-            <input
-              className="model-search"
-              type="search"
-              placeholder="Search Model"
-              aria-label="Search Model"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-            />
+            <label className="page-search-wrap">
+              <span className="page-search-icon" aria-hidden="true">⌕</span>
+              <input
+                className="page-search-input"
+                type="search"
+                placeholder="Search Model"
+                aria-label="Search Model"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+              />
+            </label>
             <button className="model-add-button" type="button" onClick={openAddForm}>
-              Add Model
+              <span aria-hidden="true">＋</span> Add Model
             </button>
           </div>
           {modelLoadError && (
@@ -374,27 +395,94 @@ function ModelPage() {
             {saveError && <div role="alert">{saveError}</div>}
             <div className="model-form-field">
               <label htmlFor="model-company">Company <span aria-hidden="true">*</span></label>
-              <select
-                id="model-company"
-                value={company}
-                aria-invalid={Boolean(errors.company)}
-                aria-describedby={errors.company ? 'model-company-error' : undefined}
-                onChange={(event) => {
-                  const selectedCompany = event.target.value;
-                  setCompany(selectedCompany);
-                  if (selectedCompany.trim()) setErrors((current) => ({ ...current, company: '' }));
-                }}
-                disabled={isLoadingCompanies}
-              >
-                <option value="">
-                  {isLoadingCompanies ? 'Loading companies...' : 'Select Company'}
-                </option>
-                {companies.map((companyOption) => (
-                  <option key={companyOption.companyID} value={String(companyOption.companyID)}>
-                    {companyOption.name}
-                  </option>
-                ))}
-              </select>
+              <div className="model-company-combobox">
+                <input
+                  id="model-company"
+                  type="text"
+                  role="combobox"
+                  autoComplete="off"
+                  placeholder={isLoadingCompanies ? 'Loading companies...' : 'Select Company'}
+                  value={isCompanyDropdownOpen ? companySearch : selectedCompanyName}
+                  aria-autocomplete="list"
+                  aria-controls="model-company-options"
+                  aria-expanded={isCompanyDropdownOpen}
+                  aria-activedescendant={
+                    isCompanyDropdownOpen && filteredCompanies[activeCompanyIndex]
+                      ? `model-company-option-${filteredCompanies[activeCompanyIndex].companyID}`
+                      : undefined
+                  }
+                  aria-invalid={Boolean(errors.company)}
+                  aria-describedby={errors.company ? 'model-company-error' : undefined}
+                  onFocus={() => {
+                    setCompanySearch('');
+                    setActiveCompanyIndex(0);
+                    setIsCompanyDropdownOpen(true);
+                  }}
+                  onBlur={() => setIsCompanyDropdownOpen(false)}
+                  onChange={(event) => {
+                    setCompany('');
+                    setCompanySearch(event.target.value);
+                    setActiveCompanyIndex(0);
+                    setIsCompanyDropdownOpen(true);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === 'ArrowDown') {
+                      event.preventDefault();
+                      setIsCompanyDropdownOpen(true);
+                      setActiveCompanyIndex((index) => (
+                        filteredCompanies.length ? Math.min(index + 1, filteredCompanies.length - 1) : 0
+                      ));
+                    } else if (event.key === 'ArrowUp') {
+                      event.preventDefault();
+                      setIsCompanyDropdownOpen(true);
+                      setActiveCompanyIndex((index) => Math.max(index - 1, 0));
+                    } else if (event.key === 'Enter' && isCompanyDropdownOpen && filteredCompanies[activeCompanyIndex]) {
+                      event.preventDefault();
+                      const selectedCompany = filteredCompanies[activeCompanyIndex];
+                      setCompany(String(selectedCompany.companyID));
+                      setCompanySearch('');
+                      setIsCompanyDropdownOpen(false);
+                      setErrors((current) => ({ ...current, company: '' }));
+                    } else if (event.key === 'Escape') {
+                      setIsCompanyDropdownOpen(false);
+                      setCompanySearch('');
+                    }
+                  }}
+                  disabled={isLoadingCompanies}
+                />
+                {isCompanyDropdownOpen && (
+                  <div
+                    id="model-company-options"
+                    className="model-company-options"
+                    role="listbox"
+                    aria-label="Companies"
+                    onMouseDown={(event) => event.preventDefault()}
+                  >
+                    {filteredCompanies.length > 0 ? filteredCompanies.map((companyOption, index) => (
+                      <div
+                        id={`model-company-option-${companyOption.companyID}`}
+                        key={companyOption.companyID}
+                        className={`model-company-option${index === activeCompanyIndex ? ' is-active' : ''}`}
+                        role="option"
+                        aria-selected={String(companyOption.companyID) === company}
+                        onMouseEnter={() => setActiveCompanyIndex(index)}
+                        onClick={() => {
+                          setCompany(String(companyOption.companyID));
+                          setCompanySearch('');
+                          setIsCompanyDropdownOpen(false);
+                          setErrors((current) => ({ ...current, company: '' }));
+                        }}
+                      >
+                        {companyOption.name}
+                      </div>
+                    )) : (
+                      <div className="model-company-no-options" role="status">
+                        No companies found.
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
               {errors.company && <span id="model-company-error" className="required-field-error" role="alert">{errors.company}</span>}
               {companyLoadError && (
                 <span role="alert">

@@ -1,7 +1,8 @@
 .expense-head-card { margin-top: 25px; padding: 24px; border: 1px solid var(--line); border-radius: 5px; background: #fff; }
 .expense-head-toolbar { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
-.expense-head-search { flex: 1; min-width: 0; min-height: 42px; padding: 10px 12px; border: 1px solid #d9deea; border-radius: 4px; color: var(--ink); font: inherit; font-size: 13px; }
-.expense-head-add-button { min-height: 40px; padding: 10px 18px; border: 0; border-radius: 4px; color: #fff; background: #28a745; font: inherit; font-size: 13px; cursor: pointer; }
+.expense-head-add-button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 9px 16px; border: 1px solid transparent; border-radius: 5px; color: #fff; background: #28a745; font: inherit; font-size: 13px; font-weight: 500; cursor: pointer; }
+.expense-head-add-button:hover { background: #218838; }
+.expense-head-add-button span { font-size: 18px; line-height: 1; }
 .expense-head-table-wrap { overflow-x: auto; }
 .expense-head-table { width: 100%; border-collapse: collapse; }
 .expense-head-table th, .expense-head-table td { padding: 10px; border: 1px solid #ddd; text-align: left; font-size: 13px; }

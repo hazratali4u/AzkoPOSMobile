@@ -1,0 +1,33 @@
+.expense-entry-card { margin-top: 25px; padding: 24px; border: 1px solid var(--line); border-radius: 5px; background: #fff; }
+.expense-entry-toolbar { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+.expense-entry-add-button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 9px 16px; border: 1px solid transparent; border-radius: 5px; color: #fff; background: #28a745; font: inherit; font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap; }
+.expense-entry-add-button:hover { background: #218838; }
+.expense-entry-add-button span { font-size: 18px; line-height: 1; }
+.expense-entry-table-wrap { overflow-x: auto; }
+.expense-entry-table { width: 100%; border-collapse: collapse; }
+.expense-entry-table th, .expense-entry-table td { padding: 10px; border: 1px solid #ddd; text-align: left; font-size: 13px; }
+.expense-entry-table th { color: #fff; background: #4caf50; font-weight: 500; }
+.expense-entry-empty-state { height: 190px; color: var(--muted); text-align: center !important; }
+.expense-entry-empty-state > * { display: block; }
+.expense-entry-empty-state strong { margin: 8px 0 4px; color: var(--ink); font-size: 14px; font-weight: 500; }
+.expense-entry-empty-icon { color: #91a197; font-size: 25px; }
+.expense-entry-form-card { padding: 28px; }
+.expense-entry-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 24px; max-width: 900px; }
+.expense-entry-field { display: grid; align-content: start; gap: 8px; }
+.expense-entry-field label { color: var(--ink); font-size: 13px; font-weight: 500; }
+.expense-entry-field label span { color: #d9534f; }
+.expense-entry-field input, .expense-entry-field select { width: 100%; min-height: 42px; padding: 10px 12px; border: 1px solid #d9deea; border-radius: 4px; color: var(--ink); background: #fff; font: inherit; font-size: 13px; }
+.expense-entry-field input:focus, .expense-entry-field select:focus { border-color: #8d99f8; outline: none; box-shadow: 0 0 0 3px rgb(63 80 246 / 9%); }
+.expense-entry-form-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
+.expense-entry-form-actions button { min-width: 88px; min-height: 40px; padding: 10px 18px; border: 1px solid transparent; border-radius: 4px; color: #fff; font: inherit; font-size: 13px; cursor: pointer; }
+.expense-entry-save-button { border-color: #3f50f6 !important; background: #3f50f6; }
+.expense-entry-cancel-button { border-color: #ff3ca6 !important; background: #ff3ca6; }
+
+@media (max-width: 600px) {
+  .expense-entry-card { padding: 18px 15px; }
+  .expense-entry-toolbar { align-items: stretch; flex-direction: column; }
+  .expense-entry-form-grid { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+  .expense-entry-table th { padding: 8px; white-space: nowrap; }
+  .expense-entry-form-actions { flex-direction: column; }
+  .expense-entry-form-actions button { width: 100%; }
+}

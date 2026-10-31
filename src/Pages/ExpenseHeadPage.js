@@ -145,10 +145,10 @@ const saveExpenseHead = async (event) => {
       });
 
       if (!response.ok) {
-        throw new Error('Party save request failed.');
+        throw new Error('Expense Head save request failed.');
       }
 
-      setSaveMessage('Party saved successfully.');
+      setSaveMessage('Expense Head saved successfully.');
       setIsAddingExpenseHead(false);
       setReloadKey((key) => key + 1);
     } catch {
@@ -220,15 +220,20 @@ const saveExpenseHead = async (event) => {
       {!isAddingExpenseHead ? (
         <section className="expense-head-card" aria-label="Expense Head list">
           <div className="expense-head-toolbar">
-            <input
-              className="expense-head-search"
-              type="search"
-              placeholder="Search Party"
-              aria-label="Search Party"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-            />
-            <button className="expense-head-add-button" type="button" onClick={openAddForm}>Add Party</button>
+            <label className="page-search-wrap">
+              <span className="page-search-icon" aria-hidden="true">⌕</span>
+              <input
+                className="page-search-input"
+                type="search"
+                placeholder="Search Expense Head"
+                aria-label="Search Expense Head"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+              />
+            </label>
+            <button className="expense-head-add-button" type="button" onClick={openAddForm}>
+              <span aria-hidden="true">＋</span> Add Expense Head
+            </button>
           </div>
           {loadError && (
             <div role="alert">

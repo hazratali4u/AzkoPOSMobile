@@ -251,15 +251,20 @@ function UserPage() {
       {!isAddingUser ? (
         <section className="user-card" aria-label="User list">
           <div className="user-toolbar">
-            <input
-              className="user-search"
-              type="search"
-              placeholder="Search User"
-              aria-label="Search User"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-            />
-            <button className="user-add-button" type="button" onClick={openAddForm}>Add User</button>
+            <label className="page-search-wrap">
+              <span className="page-search-icon" aria-hidden="true">⌕</span>
+              <input
+                className="page-search-input"
+                type="search"
+                placeholder="Search User"
+                aria-label="Search User"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+              />
+            </label>
+            <button className="user-add-button" type="button" onClick={openAddForm}>
+              <span aria-hidden="true">＋</span> Add User
+            </button>
           </div>
           {loadError && <div role="alert">{loadError}</div>}
           {saveError && <div role="alert">{saveError}</div>}

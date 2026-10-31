@@ -241,15 +241,20 @@ function PartyPage() {
       {!isAddingParty ? (
         <section className="party-card" aria-label="Party list">
           <div className="party-toolbar">
-            <input
-              className="party-search"
-              type="search"
-              placeholder="Search Party"
-              aria-label="Search Party"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-            />
-            <button className="party-add-button" type="button" onClick={openAddForm}>Add Party</button>
+            <label className="page-search-wrap">
+              <span className="page-search-icon" aria-hidden="true">⌕</span>
+              <input
+                className="page-search-input"
+                type="search"
+                placeholder="Search Party"
+                aria-label="Search Party"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+              />
+            </label>
+            <button className="party-add-button" type="button" onClick={openAddForm}>
+              <span aria-hidden="true">＋</span> Add Party
+            </button>
           </div>
           {loadError && (
             <div role="alert">

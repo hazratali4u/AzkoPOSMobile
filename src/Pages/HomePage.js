@@ -5,10 +5,15 @@ import ShopPage from './ShopPage';
 import PartyPage from './PartyPage';
 import UserPage from './UserPage';
 import ExpenseHeadPage from './ExpenseHeadPage';
+import ExpenseEntryPage from './ExpenseEntryPage';
+import CustomerReceiptPage from './CustomerReceiptPage';
+import SupplierPaymentPage from './SupplierPaymentPage';
+import RptDocumentWisePage from './rptDocumentWisePage';
 import CompanyPage from './CompanyPage';
 import ModelPage from './ModelPage';
 import RamRomPage from './RamRomPage';
 import PurchasePage from './PurchasePage';
+import POSPage from './POSPage';
 
 const menuIcons = {
   1: 'mdi-settings',
@@ -178,10 +183,15 @@ function HomePage({ pathname, onNavigate, onLogout }) {
     shop: ShopPage,
     user: UserPage,
     'expense head': ExpenseHeadPage,
+    'expense entry': ExpenseEntryPage,
+    'customer receipt': CustomerReceiptPage,
+    'supplier payment': SupplierPaymentPage,
+    'document wise report': RptDocumentWisePage,
     company: CompanyPage,
     model: ModelPage,
     ramrom: RamRomPage,
     purchase: PurchasePage,
+    pos: POSPage,
   };
   const PageComponent = pageComponents[activePage.toLowerCase()];
   const employeeName = user && user.employeeName ? user.employeeName : 'Admin User';
